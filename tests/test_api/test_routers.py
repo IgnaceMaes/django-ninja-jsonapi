@@ -1,8 +1,11 @@
+from typing import Annotated
+
 import pytest
 from ninja import NinjaAPI
 from pydantic import BaseModel
 
 from django_ninja_jsonapi.api.application_builder import ApplicationBuilder, ApplicationBuilderError
+from django_ninja_jsonapi.types_metadata import RelationshipInfo
 from django_ninja_jsonapi.views.enums import Operation
 
 
@@ -108,3 +111,59 @@ def test_include_router_kwargs_requires_router_argument():
             schema=DummySchema,
             include_router_kwargs={"prefix": "/v1"},
         )
+
+
+def test_relationship_endpoint_uses_related_resource_builder_context():
+    class ComputerSchema(BaseModel):
+        id: int
+        serial: str
+
+    class CustomerSchema(BaseModel):
+        id: int
+        name: str
+        computers: Annotated[list[ComputerSchema], RelationshipInfo(resource_type="computer", many=True)] = []
+
+    api = NinjaAPI()
+    builder = ApplicationBuilder(api)
+
+    builder.add_resource(
+        path="/customers",
+        tags=["customers"],
+        resource_type="customer",
+        view=DummyView,
+        model=DummyModel,
+        schema=CustomerSchema,
+    )
+    builder.add_resource(
+        path="/computers",
+        tags=["computers"],
+        resource_type="computer",
+        view=DummyView,
+        model=DummyModel,
+        schema=ComputerSchema,
+    )
+
+    builder.initialize()
+
+    relationship_op = None
+    for _, router in api._routers:
+        path_view = router.path_operations.get("/customers/{obj_id}/relationships/computers/")
+        if not path_view:
+            continue
+
+        relationship_op = next(
+            (op for op in path_view.operations if getattr(op, "operation_id", "") == "customer_computers_get_list"),
+            None,
+        )
+        if relationship_op:
+            break
+
+    assert relationship_op is not None
+    closure = getattr(relationship_op.view_func, "__closure__", ()) or ()
+    captured_resource_types = [
+        cell.cell_contents.resource_type
+        for cell in closure
+        if hasattr(cell.cell_contents, "resource_type")
+    ]
+
+    assert "computer" in captured_resource_types
