@@ -9,10 +9,11 @@ from django_ninja_jsonapi.common import get_relationship_info_from_field_metadat
 from django_ninja_jsonapi.data_layers.base import BaseDataLayer
 from django_ninja_jsonapi.data_layers.django_orm.base_model import BaseDjangoORM
 from django_ninja_jsonapi.data_layers.django_orm.query_building import apply_filters, apply_sorts
-from django_ninja_jsonapi.exceptions import RelationNotFound
+from django_ninja_jsonapi.exceptions import InvalidInclude, RelationNotFound
 from django_ninja_jsonapi.querystring import QueryStringManager
 from django_ninja_jsonapi.schema import BaseJSONAPIItemInSchema
 from django_ninja_jsonapi.storages.models_storage import models_storage
+from django_ninja_jsonapi.storages.schemas_storage import schemas_storage
 from django_ninja_jsonapi.views.schemas import RelationshipRequestInfo
 
 
@@ -77,7 +78,19 @@ class DjangoORMDataLayer(BaseDataLayer):
                 },
             )
             relationship_name = relationship_request_info.relationship_name
+            relationship_info = schemas_storage.get_relationship_info(
+                resource_type=relationship_request_info.parent_resource_type,
+                operation_type="get",
+                field_name=relationship_name,
+            )
+            relation_attr_name = (
+                relationship_info.model_field_name
+                if relationship_info and relationship_info.model_field_name
+                else relationship_name
+            )
             relationship_value = getattr(parent_obj, relationship_name, None)
+            if relationship_value is None and relation_attr_name != relationship_name:
+                relationship_value = getattr(parent_obj, relation_attr_name, None)
             if relationship_value is None:
                 raise RelationNotFound(detail=f"Relation {relationship_name!r} not found")
 
@@ -117,7 +130,19 @@ class DjangoORMDataLayer(BaseDataLayer):
                     ): relationship_request_info.parent_obj_id
                 },
             )
+            relationship_info = schemas_storage.get_relationship_info(
+                resource_type=relationship_request_info.parent_resource_type,
+                operation_type="get",
+                field_name=relationship_request_info.relationship_name,
+            )
+            relation_attr_name = (
+                relationship_info.model_field_name
+                if relationship_info and relationship_info.model_field_name
+                else relationship_request_info.relationship_name
+            )
             relationship_value = getattr(parent_obj, relationship_request_info.relationship_name, None)
+            if relationship_value is None and relation_attr_name != relationship_request_info.relationship_name:
+                relationship_value = getattr(parent_obj, relation_attr_name, None)
             if relationship_value is None:
                 raise RelationNotFound(detail=f"Relation {relationship_request_info.relationship_name!r} not found")
 
@@ -169,7 +194,10 @@ class DjangoORMDataLayer(BaseDataLayer):
 
     async def get_relationship(self, relationship_field, related_type_, related_id_field, view_kwargs):
         db_object = await self.get_object(view_kwargs=view_kwargs)
-        relationship = getattr(db_object, relationship_field)
+        field = self.schema.model_fields.get(relationship_field)
+        rel_info = get_relationship_info_from_field_metadata(field) if field is not None else None
+        relation_attr_name = rel_info.model_field_name if rel_info and rel_info.model_field_name else relationship_field
+        relationship = getattr(db_object, relation_attr_name)
         if hasattr(relationship, "all"):
             related_objects = await sync_to_async(list, thread_sensitive=True)(relationship.all())
         else:
@@ -179,41 +207,47 @@ class DjangoORMDataLayer(BaseDataLayer):
 
     async def update_relationship(self, json_data, relationship_field, related_id_field, view_kwargs):
         db_object = await self.get_object(view_kwargs=view_kwargs)
-        relationship = getattr(db_object, relationship_field)
+        field = self.schema.model_fields.get(relationship_field)
+        rel_info = get_relationship_info_from_field_metadata(field) if field is not None else None
+        relation_attr_name = rel_info.model_field_name if rel_info and rel_info.model_field_name else relationship_field
+        relationship = getattr(db_object, relation_attr_name)
 
         items = json_data.get("data") or []
         if isinstance(items, dict):
             items = [items]
 
         ids = [item["id"] for item in items]
-        related_model = models_storage.search_relationship_model(self.resource_type, self.model, relationship_field)
+        related_model = models_storage.search_relationship_model(self.resource_type, self.model, relation_attr_name)
         related_objects = await self.get_related_objects(related_model, related_id_field, ids)
 
         if hasattr(relationship, "set"):
             await sync_to_async(relationship.set, thread_sensitive=True)(related_objects)
         else:
             value = related_objects[0] if related_objects else None
-            setattr(db_object, relationship_field, value)
+            setattr(db_object, relation_attr_name, value)
             await sync_to_async(db_object.save, thread_sensitive=True)()
 
         return True
 
     async def delete_relationship(self, json_data, relationship_field, related_id_field, view_kwargs):
         db_object = await self.get_object(view_kwargs=view_kwargs)
-        relationship = getattr(db_object, relationship_field)
+        field = self.schema.model_fields.get(relationship_field)
+        rel_info = get_relationship_info_from_field_metadata(field) if field is not None else None
+        relation_attr_name = rel_info.model_field_name if rel_info and rel_info.model_field_name else relationship_field
+        relationship = getattr(db_object, relation_attr_name)
 
         items = json_data.get("data") or []
         if isinstance(items, dict):
             items = [items]
 
         ids = [item["id"] for item in items]
-        related_model = models_storage.search_relationship_model(self.resource_type, self.model, relationship_field)
+        related_model = models_storage.search_relationship_model(self.resource_type, self.model, relation_attr_name)
         related_objects = await self.get_related_objects(related_model, related_id_field, ids)
 
         if hasattr(relationship, "remove"):
             await sync_to_async(relationship.remove, thread_sensitive=True)(*related_objects)
         else:
-            setattr(db_object, relationship_field, None)
+            setattr(db_object, relation_attr_name, None)
             await sync_to_async(db_object.save, thread_sensitive=True)()
 
         return True
@@ -227,7 +261,7 @@ class DjangoORMDataLayer(BaseDataLayer):
         queryset = apply_sorts(queryset, qs.sorts)
 
         for include_path in qs.include:
-            include_expr = include_path.replace(".", "__")
+            include_expr = self._map_include_path_to_prefetch(include_path)
             queryset = queryset.prefetch_related(include_expr)
 
         fields = qs.fields.get(self.resource_type)
@@ -235,6 +269,29 @@ class DjangoORMDataLayer(BaseDataLayer):
             queryset = queryset.only(models_storage.get_model_id_field_name(self.resource_type), *fields)
 
         return queryset
+
+    def _map_include_path_to_prefetch(self, include_path: str) -> str:
+        resource_type = self.resource_type
+        include_expr_parts = []
+
+        for relationship_name in include_path.split("."):
+            relationship_info = schemas_storage.get_relationship_info(
+                resource_type=resource_type,
+                operation_type="get",
+                field_name=relationship_name,
+            )
+            if relationship_info is None:
+                raise InvalidInclude(
+                    detail=(
+                        f"Relationship {relationship_name!r} is not available for "
+                        f"resource type {resource_type!r}."
+                    )
+                )
+
+            include_expr_parts.append(relationship_info.model_field_name or relationship_name)
+            resource_type = relationship_info.resource_type
+
+        return "__".join(include_expr_parts)
 
     async def _apply_relationships(self, db_object, data_payload: BaseJSONAPIItemInSchema):
         if data_payload.relationships is None:
@@ -259,15 +316,16 @@ class DjangoORMDataLayer(BaseDataLayer):
             else:
                 ids = [ids_payload["id"]] if ids_payload else []
 
-            related_model = models_storage.search_relationship_model(self.resource_type, self.model, relation_name)
+            relation_attr_name = rel_info.model_field_name or relation_name
+            related_model = models_storage.search_relationship_model(self.resource_type, self.model, relation_attr_name)
             related_objects = await self.get_related_objects(related_model, rel_info.id_field_name, ids)
 
-            relation_attr = getattr(db_object, relation_name)
+            relation_attr = getattr(db_object, relation_attr_name)
             if hasattr(relation_attr, "set"):
                 await sync_to_async(relation_attr.set, thread_sensitive=True)(related_objects)
             else:
                 value = related_objects[0] if related_objects else None
-                setattr(db_object, relation_name, value)
+                setattr(db_object, relation_attr_name, value)
                 await sync_to_async(db_object.save, thread_sensitive=True)()
 
     async def before_create_object(self, data, view_kwargs):

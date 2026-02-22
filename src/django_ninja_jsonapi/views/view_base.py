@@ -354,12 +354,13 @@ class ViewBase:
                             f"resource type {resource_type!r}."
                         )
                     )
+                relationship_attr_name = info.model_field_name or target_relationship
                 db_items_to_process: list[TypeModel] = []
                 items_data_to_process: list[dict] = []
 
                 if info.many:
                     relationship_data = []
-                    relationship_db_items = getattr(db_item, target_relationship)
+                    relationship_db_items = getattr(db_item, relationship_attr_name)
                     if hasattr(relationship_db_items, "all") and callable(relationship_db_items.all):
                         relationship_db_items = relationship_db_items.all()
 
@@ -383,7 +384,7 @@ class ViewBase:
                         )
                         items_data_to_process.append(relationship_item_data)
                 else:
-                    if (relationship_db_item := getattr(db_item, target_relationship)) is None:
+                    if (relationship_db_item := getattr(db_item, relationship_attr_name)) is None:
                         item_data["relationships"][target_relationship] = {"data": None}
                         continue
 

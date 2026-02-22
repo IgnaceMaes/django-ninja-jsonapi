@@ -5,9 +5,19 @@ from pydantic import BaseModel
 from django_ninja_jsonapi.types_metadata import RelationshipInfo
 
 
+class CustomerRefSchema(BaseModel):
+    id: int
+    name: str
+    email: str
+
+
 class ComputerSchema(BaseModel):
     id: int
     serial: str
+    owner: Annotated[
+        CustomerRefSchema | None,
+        RelationshipInfo(resource_type="customer"),
+    ] = None
 
 
 class CustomerSchema(BaseModel):
