@@ -9,7 +9,7 @@ from django_ninja_jsonapi.exceptions import BadRequest
 from django_ninja_jsonapi.views.view_base import ViewBase
 
 
-class UserView(ViewBase):
+class CustomerView(ViewBase):
   async def post_resource_list_result(self, data_create, **extra_view_deps):
     if not data_create.attributes.get("name"):
       raise BadRequest(detail="Name is required", parameter="data.attributes.name")

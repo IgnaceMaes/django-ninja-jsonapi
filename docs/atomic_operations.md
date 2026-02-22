@@ -27,8 +27,8 @@ Content-Type: application/json
 		{
 			"op": "add",
 			"data": {
-				"type": "user",
-				"lid": "user-1",
+				"type": "customer",
+				"lid": "customer-1",
 				"attributes": {"name": "John", "email": "john@example.com"}
 			}
 		},
@@ -39,7 +39,7 @@ Content-Type: application/json
 				"attributes": {"serial": "ABC-123"},
 				"relationships": {
 					"owner": {
-						"data": {"type": "user", "lid": "user-1"}
+						"data": {"type": "customer", "lid": "customer-1"}
 					}
 				}
 			}
@@ -56,8 +56,8 @@ payload = {
 		{
 			"op": "add",
 			"data": {
-				"type": "user",
-				"lid": "user-1",
+				"type": "customer",
+				"lid": "customer-1",
 				"attributes": {"name": "John", "email": "john@example.com"},
 			},
 		},
@@ -66,7 +66,7 @@ payload = {
 			"data": {
 				"type": "computer",
 				"attributes": {"serial": "ABC-123"},
-				"relationships": {"owner": {"data": {"type": "user", "lid": "user-1"}}},
+				"relationships": {"owner": {"data": {"type": "customer", "lid": "customer-1"}}},
 			},
 		},
 	]
@@ -81,7 +81,7 @@ print(response.status_code, response.json())
 ```json
 {
 	"atomic:results": [
-		{"data": {"type": "user", "id": "1"}},
+		{"data": {"type": "customer", "id": "1"}},
 		{"data": {"type": "computer", "id": "10"}}
 	]
 }

@@ -8,12 +8,12 @@ Snippet file: `docs/python_snippets/routing/router.py`
 
 ```python
 builder.add_resource(
-	path="/users",
-	tags=["users"],
-	resource_type="user",
-	view=UserView,
-	model=User,
-	schema=UserSchema,
+	path="/customers",
+	tags=["customers"],
+	resource_type="customer",
+	view=CustomerView,
+	model=Customer,
+	schema=CustomerSchema,
 )
 ```
 
@@ -28,18 +28,18 @@ For each resource, the builder creates list/detail CRUD endpoints and relationsh
 
 ## Route map (example)
 
-For `/users`:
+For `/customers`:
 
-- `GET /users/` → list
-- `POST /users/` → create
-- `GET /users/{obj_id}/` → detail
-- `PATCH /users/{obj_id}/` → update
-- `DELETE /users/{obj_id}/` → delete
+- `GET /customers/` → list
+- `POST /customers/` → create
+- `GET /customers/{obj_id}/` → detail
+- `PATCH /customers/{obj_id}/` → update
+- `DELETE /customers/{obj_id}/` → delete
 
-For relationship `computers` on user:
+For relationship `computers` on customer:
 
-- `GET /users/{obj_id}/computers/`
-- `GET /users/{obj_id}/relationships/computers/`
+- `GET /customers/{obj_id}/computers/`
+- `GET /customers/{obj_id}/relationships/computers/`
 
 ## Atomic route
 

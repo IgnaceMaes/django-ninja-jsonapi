@@ -37,6 +37,6 @@ Then bind it on your view:
 from django_ninja_jsonapi import ViewBaseGeneric
 
 
-class UserView(ViewBaseGeneric):
+class CustomerView(ViewBaseGeneric):
 	data_layer_cls = TenantAwareDataLayer
 ```

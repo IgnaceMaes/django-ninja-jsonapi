@@ -1,9 +1,8 @@
+from app.models import Computer, Customer
+from app.schemas import ComputerSchema, CustomerSchema
 from ninja import NinjaAPI
 
 from django_ninja_jsonapi import ApplicationBuilder, ViewBaseGeneric
-
-from app.models import Computer, Customer
-from app.schemas import ComputerSchema, CustomerSchema
 
 
 class CustomerView(ViewBaseGeneric):

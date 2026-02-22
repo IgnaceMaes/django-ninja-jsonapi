@@ -17,7 +17,7 @@ This abstraction lets you evolve storage internals without breaking public API s
 from pydantic import BaseModel, computed_field
 
 
-class UserSchema(BaseModel):
+class CustomerSchema(BaseModel):
 	id: int
 	name: str
 	email: str

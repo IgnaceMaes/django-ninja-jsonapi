@@ -47,7 +47,7 @@ class ComputerSchema(BaseModel):
     ] = None
 
 
-    class CustomerSchema(BaseModel):
+class CustomerSchema(BaseModel):
     id: int
     name: str
     email: str
@@ -137,7 +137,7 @@ Relationship endpoints (from `RelationshipInfo`):
 
 ### Create customer
 
-JSON snippet: `docs/http_snippets/quickstart__create_user.json`
+JSON snippet: `docs/http_snippets/quickstart__create_customer.json`
 
 ```http
 POST /api/customers
@@ -162,7 +162,7 @@ GET /api/customers?include=computers&fields[customer]=name,email,computers&field
 
 ### Update customer
 
-JSON snippet: `docs/http_snippets/quickstart__update_user.json`
+JSON snippet: `docs/http_snippets/quickstart__update_customer.json`
 
 ```http
 PATCH /api/customers/1

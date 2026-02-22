@@ -38,7 +38,7 @@ def common_handler(view, dto: RequestContext) -> dict:
 	}
 
 
-class UserView(ViewBaseGeneric):
+class CustomerView(ViewBaseGeneric):
 	operation_dependencies = {
 		Operation.ALL: OperationConfig(
 			dependencies=RequestContext,

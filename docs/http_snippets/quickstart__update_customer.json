@@ -1,12 +1,12 @@
 {
   "method": "PATCH",
-  "path": "/api/users/1",
+  "path": "/api/customers/1",
   "headers": {
     "Content-Type": "application/json"
   },
   "body": {
     "data": {
-      "type": "user",
+      "type": "customer",
       "id": "1",
       "attributes": {
         "name": "John Updated"

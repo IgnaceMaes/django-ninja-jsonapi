@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from django_ninja_jsonapi.types_metadata import ClientCanSetId
 
 
-class UserSchema(BaseModel):
+class CustomerSchema(BaseModel):
     id: Annotated[str, ClientCanSetId(cast_type=str)]
     name: str
     email: str
@@ -19,13 +19,13 @@ class UserSchema(BaseModel):
 Create request example:
 
 ```http
-POST /api/users
+POST /api/customers
 Content-Type: application/json
 
 {
 	"data": {
-		"type": "user",
-		"id": "external-user-123",
+		"type": "customer",
+		"id": "external-customer-123",
 		"attributes": {
 			"name": "John",
 			"email": "john@example.com"

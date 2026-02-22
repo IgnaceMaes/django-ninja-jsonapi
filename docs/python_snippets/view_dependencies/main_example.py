@@ -12,7 +12,7 @@ def all_handler(view, dto: TenantDependency) -> dict:
     return {"tenant_id": dto.tenant_id}
 
 
-class UserView(ViewBaseGeneric):
+class CustomerView(ViewBaseGeneric):
     operation_dependencies = {
         Operation.ALL: OperationConfig(
             dependencies=TenantDependency,

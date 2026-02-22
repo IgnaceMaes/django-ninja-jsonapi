@@ -11,24 +11,24 @@ from pydantic import BaseModel
 from django_ninja_jsonapi import ApplicationBuilder, ViewBaseGeneric
 
 
-class UserSchema(BaseModel):
+class CustomerSchema(BaseModel):
     id: int
     name: str
 
 
-class UserView(ViewBaseGeneric):
+class CustomerView(ViewBaseGeneric):
     pass
 
 api = NinjaAPI()
 builder = ApplicationBuilder(api)
 
 builder.add_resource(
-    path="/users",
-    tags=["users"],
-    resource_type="user",
-    view=UserView,
-    model=User,
-    schema=UserSchema,
+    path="/customers",
+    tags=["customers"],
+    resource_type="customer",
+    view=CustomerView,
+    model=Customer,
+    schema=CustomerSchema,
 )
 
 builder.initialize()
@@ -47,27 +47,27 @@ urlpatterns = [
 
 ## Generated endpoints (example)
 
-For a resource at `/users`, the builder generates standard routes such as:
+For a resource at `/customers`, the builder generates standard routes such as:
 
-- `GET /users`
-- `POST /users`
-- `GET /users/{id}`
-- `PATCH /users/{id}`
-- `DELETE /users/{id}`
+- `GET /customers`
+- `POST /customers`
+- `GET /customers/{id}`
+- `PATCH /customers/{id}`
+- `DELETE /customers/{id}`
 
 ## Request samples
 
 ```http
-GET /api/users?page[size]=10&page[number]=1
+GET /api/customers?page[size]=10&page[number]=1
 ```
 
 ```http
-POST /api/users
+POST /api/customers
 Content-Type: application/json
 
 {
     "data": {
-        "type": "user",
+        "type": "customer",
         "attributes": {
             "name": "Jane"
         }

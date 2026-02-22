@@ -20,7 +20,7 @@ def get_handler(view, dto: GetDependency) -> dict:
     return {"key_2": dto.key_2}
 
 
-class UserView(ViewBaseGeneric):
+class CustomerView(ViewBaseGeneric):
     operation_dependencies = {
         Operation.ALL: OperationConfig(
             dependencies=CommonDependency,

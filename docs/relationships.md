@@ -21,12 +21,12 @@ class ComputerSchema(BaseModel):
 	id: int
 	serial: str
 	owner: Annotated[
-		Optional["UserSchema"],
-		RelationshipInfo(resource_type="user", many=False),
+		Optional["CustomerSchema"],
+		RelationshipInfo(resource_type="customer", many=False),
 	] = None
 
 
-class UserSchema(BaseModel):
+class CustomerSchema(BaseModel):
 	id: int
 	name: str
 	computers: Annotated[
@@ -45,16 +45,16 @@ Relationship metadata drives:
 
 ## Typical endpoints and calls
 
-- `GET /users/{id}/computers`
-- `GET /users/{id}/relationships/computers`
-- `POST/PATCH/DELETE /users/{id}/relationships/computers`
+- `GET /customers/{id}/computers`
+- `GET /customers/{id}/relationships/computers`
+- `POST/PATCH/DELETE /customers/{id}/relationships/computers`
 
 ```http
-GET /users/1/relationships/computers
+GET /customers/1/relationships/computers
 ```
 
 ```http
-PATCH /users/1/relationships/computers
+PATCH /customers/1/relationships/computers
 Content-Type: application/json
 
 {

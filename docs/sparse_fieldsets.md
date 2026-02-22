@@ -11,19 +11,19 @@ fields[<resource_type>]=field1,field2
 ## Examples
 
 ```http
-GET /users?fields[user]=name
-GET /users/1?include=computers&fields[computer]=serial
-GET /users/1?include=computers&fields[user]=name,computers&fields[computer]=serial
+GET /customers?fields[customer]=name
+GET /customers/1?include=computers&fields[computer]=serial
+GET /customers/1?include=computers&fields[customer]=name,computers&fields[computer]=serial
 ```
 
 ```python
 import httpx
 
 response = httpx.get(
-	"http://localhost:8000/api/users/1",
+	"http://localhost:8000/api/customers/1",
 	params={
 		"include": "computers",
-		"fields[user]": "name,computers",
+		"fields[customer]": "name,computers",
 		"fields[computer]": "serial",
 	},
 )
@@ -35,7 +35,7 @@ Example effect:
 ```json
 {
 	"data": {
-		"type": "user",
+		"type": "customer",
 		"id": "1",
 		"attributes": {"name": "John"}
 	},

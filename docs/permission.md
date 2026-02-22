@@ -22,7 +22,7 @@ def check_admin(view, dto: AuthDependency) -> dict:
 	return {}
 
 
-class UserView(ViewBaseGeneric):
+class CustomerView(ViewBaseGeneric):
 	operation_dependencies = {
 		Operation.GET: OperationConfig(
 			dependencies=AuthDependency,

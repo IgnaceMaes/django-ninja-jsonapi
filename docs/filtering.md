@@ -5,7 +5,7 @@ Filtering uses the `filter` query parameter and is translated by the data layer.
 ## Full JSON filter format (single condition)
 
 ```http
-GET /users?filter=[{"name":"name","op":"eq","val":"John"}]
+GET /customers?filter=[{"name":"name","op":"eq","val":"John"}]
 ```
 
 ```python
@@ -15,7 +15,7 @@ from urllib.parse import quote
 import httpx
 
 flt = json.dumps([{"name": "name", "op": "eq", "val": "John"}])
-url = f"http://localhost:8000/api/users?filter={quote(flt)}"
+url = f"http://localhost:8000/api/customers?filter={quote(flt)}"
 
 response = httpx.get(url)
 print(response.status_code, response.json())
@@ -24,14 +24,14 @@ print(response.status_code, response.json())
 ## Full JSON filter format (multiple conditions)
 
 ```http
-GET /users?filter=[{"name":"status","op":"eq","val":"active"},{"name":"age","op":"ge","val":18}]
+GET /customers?filter=[{"name":"status","op":"eq","val":"active"},{"name":"age","op":"ge","val":18}]
 ```
 
 ## Simple filters
 
 ```http
-GET /users?filter[name]=John
-GET /users?filter[name]=John&filter[status]=active
+GET /customers?filter[name]=John
+GET /customers?filter[name]=John&filter[status]=active
 ```
 
 Simple filters are treated as `eq` comparisons.
@@ -39,7 +39,7 @@ Simple filters are treated as `eq` comparisons.
 ## Relationship-path filters
 
 ```http
-GET /users?filter[computers.serial]=ABC-123
+GET /customers?filter[computers.serial]=ABC-123
 GET /computers?filter[owner.id]=1
 ```
 
