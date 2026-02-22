@@ -31,6 +31,8 @@ class ViewBase:
 
     data_layer_cls = BaseDataLayer
     operation_dependencies: ClassVar[dict[Operation, OperationConfig]] = {}
+    select_for_includes: ClassVar[dict[str, list[str]]] = {}
+    prefetch_for_includes: ClassVar[dict[str, list[str]]] = {}
 
     def __init__(
         self,
@@ -51,6 +53,7 @@ class ViewBase:
         self.options: dict = options
         self.query_params: QueryStringManager = QueryStringManager(request=request)
         self._api_prefix: Optional[str] = None
+        self._validate_include_paths()
 
     async def get_data_layer(
         self,
@@ -68,6 +71,8 @@ class ViewBase:
             model=self.model,
             schema=self.schema,
             resource_type=self.resource_type,
+            select_for_includes=self.select_for_includes,
+            prefetch_for_includes=self.prefetch_for_includes,
             **dl_kwargs,
         )
 
@@ -246,7 +251,10 @@ class ViewBase:
 
         return dl_kwargs
 
-    def _calculate_total_pages(self, db_items_count: int) -> int:
+    def _calculate_total_pages(self, db_items_count: Optional[int]) -> Optional[int]:
+        if db_items_count is None:
+            return None
+
         total_pages = 1
         if not (pagination_size := self.query_params.pagination.size):
             return total_pages
@@ -255,6 +263,28 @@ class ViewBase:
             # one more page if not a multiple of size
             (db_items_count % pagination_size) and 1
         )
+
+    def _validate_include_paths(self):
+        if not schemas_storage.has_resource(self.resource_type):
+            return
+
+        for include_path in self.query_params.include:
+            resource_type = self.resource_type
+            for relationship_name in include_path.split("."):
+                info = schemas_storage.get_relationship_info(
+                    resource_type=resource_type,
+                    operation_type="get",
+                    field_name=relationship_name,
+                )
+                if info is None:
+                    raise InvalidInclude(
+                        detail=(
+                            f"Relationship {relationship_name!r} is not available for "
+                            f"resource type {resource_type!r}."
+                        )
+                    )
+
+                resource_type = info.resource_type
 
     @staticmethod
     def _normalize_path(path: str) -> str:
@@ -287,7 +317,7 @@ class ViewBase:
         }
 
     @staticmethod
-    def _replace_query_params(url: str, params: dict[str, Optional[int]]) -> str:
+    def _replace_query_params(url: str, params: dict[str, Optional[Any]]) -> str:
         split = urlsplit(url)
         query = parse_qs(split.query, keep_blank_values=True)
         for key, value in params.items():
@@ -299,7 +329,7 @@ class ViewBase:
         encoded = urlencode(query, doseq=True)
         return urlunsplit((split.scheme, split.netloc, split.path, encoded, split.fragment))
 
-    def _build_pagination_links(self, count: int, total_pages: int) -> dict[str, Optional[str]]:
+    def _build_pagination_links(self, count: Optional[int], total_pages: Optional[int]) -> dict[str, Optional[str]]:
         self_url = self.request.build_absolute_uri(self.request.get_full_path())
         links: dict[str, Optional[str]] = {
             "self": self_url,
@@ -309,10 +339,24 @@ class ViewBase:
             "next": None,
         }
 
+        if self.query_params.pagination.cursor and self.query_params.pagination.size:
+            page_size = self.query_params.pagination.size
+            links["first"] = self._replace_query_params(
+                self_url,
+                {"page[cursor]": 0, "page[size]": page_size},
+            )
+            if self.query_params.pagination.next_cursor is not None:
+                links["next"] = self._replace_query_params(
+                    self_url,
+                    {"page[cursor]": self.query_params.pagination.next_cursor, "page[size]": page_size},
+                )
+
+            return links
+
         if self.query_params.pagination.size:
             page_size = self.query_params.pagination.size
             page_number = max(1, self.query_params.pagination.number)
-            last_page = max(1, total_pages)
+            last_page = max(1, total_pages or 1)
 
             links["first"] = self._replace_query_params(self_url, {"page[number]": 1, "page[size]": page_size})
             links["last"] = self._replace_query_params(
@@ -336,7 +380,7 @@ class ViewBase:
 
         offset = self.query_params.pagination.offset
         limit = self.query_params.pagination.limit
-        if offset is None or limit is None:
+        if count is None or offset is None or limit is None:
             return links
 
         links["first"] = self._replace_query_params(self_url, {"page[offset]": 0, "page[limit]": limit})
@@ -597,8 +641,8 @@ class ViewBase:
     def _build_list_response(
         self,
         items_from_db: list[TypeModel],
-        count: int,
-        total_pages: int,
+        count: Optional[int],
+        total_pages: Optional[int],
     ) -> dict:
         include_fields = self._get_include_fields()
         items_data = [self._prepare_item_data(db_item, self.resource_type, include_fields) for db_item in items_from_db]

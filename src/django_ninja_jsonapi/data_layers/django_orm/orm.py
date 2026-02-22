@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from asgiref.sync import sync_to_async
+from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
 
 from django_ninja_jsonapi.common import get_relationship_info_from_field_metadata
@@ -19,6 +20,8 @@ from django_ninja_jsonapi.views.schemas import RelationshipRequestInfo
 
 class DjangoORMDataLayer(BaseDataLayer):
     def __init__(self, *args, **kwargs):
+        self.select_for_includes: dict[str, list[str]] = kwargs.pop("select_for_includes", {})
+        self.prefetch_for_includes: dict[str, list[str]] = kwargs.pop("prefetch_for_includes", {})
         super().__init__(*args, **kwargs)
         self._atomic_ctx: Optional[transaction.Atomic] = None
 
@@ -101,10 +104,7 @@ class DjangoORMDataLayer(BaseDataLayer):
                 raise RelationNotFound(detail=f"Relation {relationship_name!r} not found")
 
             if hasattr(relationship_value, "all"):
-                related_ids = await sync_to_async(
-                    lambda: list(relationship_value.values_list("pk", flat=True)), thread_sensitive=True
-                )()
-                queryset = queryset.filter(pk__in=related_ids)
+                queryset = queryset.filter(pk__in=relationship_value.values("pk"))
             else:
                 queryset = queryset.filter(pk=getattr(relationship_value, "pk", None))
 
@@ -153,18 +153,32 @@ class DjangoORMDataLayer(BaseDataLayer):
                 raise RelationNotFound(detail=f"Relation {relationship_request_info.relationship_name!r} not found")
 
             if hasattr(relationship_value, "all"):
-                related_ids = await sync_to_async(
-                    lambda: list(relationship_value.values_list("pk", flat=True)), thread_sensitive=True
-                )()
-                queryset = queryset.filter(pk__in=related_ids)
+                queryset = queryset.filter(pk__in=relationship_value.values("pk"))
             else:
                 queryset = queryset.filter(pk=getattr(relationship_value, "pk", None))
 
+        is_cursor_pagination = bool(qs.pagination.cursor and qs.pagination.size)
         count = self.default_collection_count
-        if not self.disable_collection_count:
+        if not self.disable_collection_count and not is_cursor_pagination:
             count = await sync_to_async(queryset.count, thread_sensitive=True)()
 
         paged_queryset = queryset
+        if is_cursor_pagination:
+            id_field_name = models_storage.get_model_id_field_name(self.resource_type)
+            queryset = queryset.order_by(id_field_name)
+            paged_queryset = queryset.filter(**{f"{id_field_name}__gt": qs.pagination.cursor})
+            limited_queryset = paged_queryset[: qs.pagination.size + 1]
+            items = await sync_to_async(list, thread_sensitive=True)(limited_queryset)
+
+            if len(items) > qs.pagination.size:
+                overflow_item = items.pop()
+                qs.pagination.next_cursor = str(getattr(overflow_item, id_field_name))
+            else:
+                qs.pagination.next_cursor = None
+
+            await self.after_get_collection(items, qs, view_kwargs)
+            return None, items
+
         if qs.pagination.size:
             page_number = max(1, qs.pagination.number)
             offset = (page_number - 1) * qs.pagination.size
@@ -310,9 +324,11 @@ class DjangoORMDataLayer(BaseDataLayer):
         queryset = apply_filters(queryset, qs.filters)
         queryset = apply_sorts(queryset, qs.sorts)
 
-        for include_path in qs.include:
-            include_expr = self._map_include_path_to_prefetch(include_path)
-            queryset = queryset.prefetch_related(include_expr)
+        include_selects, include_prefetches = self._resolve_include_optimizations(qs.include)
+        if include_selects:
+            queryset = queryset.select_related(*sorted(include_selects))
+        if include_prefetches:
+            queryset = queryset.prefetch_related(*sorted(include_prefetches))
 
         fields = qs.fields.get(self.resource_type)
         if fields:
@@ -339,6 +355,53 @@ class DjangoORMDataLayer(BaseDataLayer):
             resource_type = relationship_info.resource_type
 
         return "__".join(include_expr_parts)
+
+    def _resolve_include_optimizations(self, include_paths: list[str]) -> tuple[set[str], set[str]]:
+        select_paths = set(self.select_for_includes.get("__all__", []))
+        prefetch_paths = set(self.prefetch_for_includes.get("__all__", []))
+
+        for include_path in include_paths:
+            include_expr = self._map_include_path_to_prefetch(include_path)
+            if self._is_select_related_include_path(include_path):
+                select_paths.add(include_expr)
+            else:
+                prefetch_paths.add(include_expr)
+
+            select_paths.update(self.select_for_includes.get(include_path, []))
+            prefetch_paths.update(self.prefetch_for_includes.get(include_path, []))
+
+        prefetch_paths.difference_update(select_paths)
+        return select_paths, prefetch_paths
+
+    def _is_select_related_include_path(self, include_path: str) -> bool:
+        current_model = self.model
+        resource_type = self.resource_type
+
+        for relationship_name in include_path.split("."):
+            relationship_info = schemas_storage.get_relationship_info(
+                resource_type=resource_type,
+                operation_type="get",
+                field_name=relationship_name,
+            )
+            if relationship_info is None:
+                raise InvalidInclude(
+                    detail=(f"Relationship {relationship_name!r} is not available for resource type {resource_type!r}.")
+                )
+
+            relation_attr_name = relationship_info.model_field_name or relationship_name
+            try:
+                field = current_model._meta.get_field(relation_attr_name)
+            except FieldDoesNotExist:
+                return False
+
+            is_to_one = bool(getattr(field, "many_to_one", False) or getattr(field, "one_to_one", False))
+            if not is_to_one:
+                return False
+
+            current_model = field.related_model
+            resource_type = relationship_info.resource_type
+
+        return True
 
     async def _apply_relationships(self, db_object, data_payload: BaseJSONAPIItemInSchema):
         if data_payload.relationships is None:

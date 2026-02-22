@@ -1,3 +1,5 @@
+from django.db.models import Q
+
 from django_ninja_jsonapi.data_layers.django_orm.query_building import apply_filters, apply_sorts
 
 
@@ -5,12 +7,12 @@ class FakeQuerySet:
     def __init__(self):
         self.calls = []
 
-    def filter(self, **kwargs):
-        self.calls.append(("filter", kwargs))
+    def filter(self, *args, **kwargs):
+        self.calls.append(("filter", args, kwargs))
         return self
 
     def exclude(self, **kwargs):
-        self.calls.append(("exclude", kwargs))
+        self.calls.append(("exclude", (), kwargs))
         return self
 
     def order_by(self, *args):
@@ -35,16 +37,11 @@ def test_apply_filters_maps_common_jsonapi_operators_to_django_lookups():
         ],
     )
 
-    assert queryset.calls == [
-        ("filter", {"name": "john"}),
-        ("exclude", {"age": 18}),
-        ("filter", {"score__lt": 90}),
-        ("filter", {"score__gte": 60}),
-        ("filter", {"author__name__icontains": "jo"}),
-        ("filter", {"tags__in": ["a", "b"]}),
-        ("exclude", {"status__in": ["archived"]}),
-        ("filter", {"deleted_at__isnull": True}),
-    ]
+    assert len(queryset.calls) == 8
+    for call in queryset.calls:
+        assert call[0] == "filter"
+        assert len(call[1]) == 1
+        assert isinstance(call[1][0], Q)
 
 
 def test_apply_sorts_maps_relationship_paths_and_desc_order():

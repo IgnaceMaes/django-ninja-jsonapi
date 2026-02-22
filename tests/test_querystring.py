@@ -39,6 +39,21 @@ def test_querystring_include_and_pagination_parsing():
     assert manager.pagination.size == 10
 
 
+def test_querystring_cursor_pagination_parsing():
+    request = RequestFactory().get(
+        "/api/users",
+        {
+            "page[cursor]": "100",
+            "page[size]": "10",
+        },
+    )
+
+    manager = QueryStringManager(request)
+
+    assert manager.pagination.cursor == "100"
+    assert manager.pagination.size == 10
+
+
 def test_querystring_rejects_unknown_query_param():
     request = RequestFactory().get(
         "/api/users",

@@ -178,6 +178,110 @@ def test_map_include_path_to_prefetch_uses_mapped_model_field_name(monkeypatch):
     assert data_layer._map_include_path_to_prefetch("customers") == "owner"
 
 
+def test_apply_querystring_splits_select_and_prefetch(monkeypatch):
+    class FakeQuerySet:
+        def __init__(self):
+            self.selected = []
+            self.prefetched = []
+
+        def filter(self, **kwargs):
+            return self
+
+        def order_by(self, *args):
+            return self
+
+        def select_related(self, *args):
+            self.selected.extend(args)
+            return self
+
+        def prefetch_related(self, *args):
+            self.prefetched.extend(args)
+            return self
+
+        def only(self, *args):
+            return self
+
+    request = RequestFactory().get("/api/computers", {"include": "owner,groups"})
+    data_layer = DjangoORMDataLayer(
+        request=request,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+        resource_type="computer",
+    )
+
+    fake_qs = FakeQuerySet()
+    qs_manager = DummyView(
+        request=request,
+        resource_type="computer",
+        operation=Operation.GET_LIST,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+    ).query_params
+
+    monkeypatch.setattr(data_layer, "_map_include_path_to_prefetch", lambda include_path: include_path)
+    monkeypatch.setattr(
+        data_layer,
+        "_is_select_related_include_path",
+        lambda include_path: include_path == "owner",
+    )
+
+    data_layer._apply_querystring(fake_qs, qs_manager)
+
+    assert fake_qs.selected == ["owner"]
+    assert fake_qs.prefetched == ["groups"]
+
+
+def test_apply_querystring_uses_include_mappings(monkeypatch):
+    class FakeQuerySet:
+        def __init__(self):
+            self.selected = []
+            self.prefetched = []
+
+        def filter(self, **kwargs):
+            return self
+
+        def order_by(self, *args):
+            return self
+
+        def select_related(self, *args):
+            self.selected.extend(args)
+            return self
+
+        def prefetch_related(self, *args):
+            self.prefetched.extend(args)
+            return self
+
+        def only(self, *args):
+            return self
+
+    request = RequestFactory().get("/api/computers", {"include": "owner"})
+    data_layer = DjangoORMDataLayer(
+        request=request,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+        resource_type="computer",
+        select_for_includes={"__all__": ["company"], "owner": ["owner__profile"]},
+        prefetch_for_includes={"owner": ["owner__groups"]},
+    )
+
+    fake_qs = FakeQuerySet()
+    qs_manager = DummyView(
+        request=request,
+        resource_type="computer",
+        operation=Operation.GET_LIST,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+    ).query_params
+
+    monkeypatch.setattr(data_layer, "_map_include_path_to_prefetch", lambda include_path: include_path)
+    monkeypatch.setattr(data_layer, "_is_select_related_include_path", lambda include_path: True)
+
+    data_layer._apply_querystring(fake_qs, qs_manager)
+
+    assert sorted(fake_qs.selected) == ["company", "owner", "owner__profile"]
+    assert fake_qs.prefetched == ["owner__groups"]
+
+
 def test_build_list_response_includes_top_level_links(monkeypatch):
     request = RequestFactory().get("/api/customers", {"page[number]": "2", "page[size]": "2"})
     view = DummyView(
@@ -251,3 +355,39 @@ def test_build_detail_response_includes_top_level_self_link(monkeypatch):
 
     assert response["links"]["self"].endswith("/api/customers/1")
     assert response["data"]["links"]["self"].endswith("/api/customers/1/")
+
+
+def test_build_list_response_with_cursor_has_next_link(monkeypatch):
+    request = RequestFactory().get("/api/customers", {"page[cursor]": "10", "page[size]": "2"})
+    view = DummyView(
+        request=request,
+        resource_type="customer",
+        operation=Operation.GET_LIST,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+    )
+    view.query_params.pagination.next_cursor = "12"
+
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.models_storage.get_resource_path",
+        lambda resource_type: "/customers",
+    )
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.models_storage.get_object_id",
+        lambda db_item, resource_type: db_item.id,
+    )
+    monkeypatch.setattr(
+        view,
+        "_prepare_item_data",
+        lambda db_item, resource_type, include_fields=None: {
+            "id": str(db_item.id),
+            "type": resource_type,
+            "attributes": {},
+            "links": {},
+        },
+    )
+
+    response = view._build_list_response([SimpleNamespace(id=11), SimpleNamespace(id=12)], count=None, total_pages=None)
+
+    assert response["links"]["next"] is not None
+    assert "page%5Bcursor%5D=12" in response["links"]["next"]

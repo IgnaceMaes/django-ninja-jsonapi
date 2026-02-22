@@ -61,6 +61,12 @@ Generated endpoints include:
 - Resource objects include `links.self`.
 - Relationship objects include `links.self` and `links.related`.
 
+### Django ORM optimizations
+
+- Include paths are split automatically between `select_related` (to-one chains) and `prefetch_related` (to-many chains).
+- Filter parsing supports logical trees (`and`, `or`, `not`) in JSON `filter` payloads.
+- Cursor pagination is available via `page[cursor]` + `page[size]`.
+
 ### Query parameter validation
 
 - Allowed top-level query params: `filter`, `sort`, `include`, `fields[...]`, `page[...]`.

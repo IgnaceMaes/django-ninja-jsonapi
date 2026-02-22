@@ -53,8 +53,28 @@ GET /computers?filter[owner.id]=1
 
 ## Logical combinations
 
-Logical OR/AND/NOT filter trees are not supported yet in the built-in Django ORM data layer.
-Multiple filters are applied as AND conditions.
+Logical filter trees are supported via `and`, `or`, and `not` groups.
+
+```json
+[
+	{"name": "status", "op": "eq", "val": "active"},
+	{
+		"or": [
+			{"name": "age", "op": "gt", "val": 30},
+			{"name": "role", "op": "eq", "val": "admin"}
+		]
+	},
+	{
+		"not": {
+			"name": "deleted_at",
+			"op": "is_null",
+			"val": false
+		}
+	}
+]
+```
+
+Top-level filter list items are still AND-combined in order.
 
 ## Notes
 

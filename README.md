@@ -17,6 +17,8 @@ Full documentation is available in [docs/index.md](docs/index.md).
 - Atomic operations endpoint wiring (`/operations`).
 - Django ORM data-layer baseline for CRUD + basic relationship handling.
 - Top-level/resource/relationship `links` in responses.
+- Django ORM include optimization (`select_related`/`prefetch_related` split) with optional include mapping overrides.
+- Logical filter groups (`and`/`or`/`not`) and cursor pagination (`page[cursor]`).
 
 ## Requirements
 

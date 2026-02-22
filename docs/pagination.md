@@ -20,6 +20,14 @@ GET /customers?page[number]=2
 GET /customers?page[size]=10&page[number]=2
 ```
 
+## Cursor pagination
+
+```http
+GET /customers?page[cursor]=100&page[size]=10
+```
+
+Cursor pagination uses keyset-style paging by resource id and returns `links.next` when more rows are available.
+
 ```python
 import httpx
 

@@ -32,6 +32,8 @@ class PaginationQueryStringManager(BaseModel):
     size: Optional[int] = 25
     number: int = 1
     limit: Optional[int] = None
+    cursor: Optional[str] = None
+    next_cursor: Optional[str] = None
 
 
 class HeadersQueryStringManager(BaseModel):

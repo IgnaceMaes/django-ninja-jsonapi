@@ -2,43 +2,69 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 
 
 def _normalize_lookup(field_name: str) -> str:
     return field_name.replace(".", "__")
 
 
+def _build_condition_q(item: dict[str, Any]) -> Q:
+    if "and" in item:
+        q = Q()
+        for child in item["and"]:
+            q &= _build_condition_q(child)
+        return q
+
+    if "or" in item:
+        q = Q()
+        children = item["or"]
+        if not children:
+            return q
+
+        q = _build_condition_q(children[0])
+        for child in children[1:]:
+            q |= _build_condition_q(child)
+        return q
+
+    if "not" in item:
+        return ~_build_condition_q(item["not"])
+
+    field_name = _normalize_lookup(item["name"])
+    op = item.get("op", "eq")
+    value = item.get("val")
+
+    if op == "eq":
+        return Q(**{field_name: value})
+    if op == "ne":
+        return ~Q(**{field_name: value})
+    if op == "lt":
+        return Q(**{f"{field_name}__lt": value})
+    if op == "le":
+        return Q(**{f"{field_name}__lte": value})
+    if op == "gt":
+        return Q(**{f"{field_name}__gt": value})
+    if op == "ge":
+        return Q(**{f"{field_name}__gte": value})
+    if op == "in":
+        values = value if isinstance(value, list) else [value]
+        return Q(**{f"{field_name}__in": values})
+    if op == "not_in":
+        values = value if isinstance(value, list) else [value]
+        return ~Q(**{f"{field_name}__in": values})
+    if op == "like":
+        return Q(**{f"{field_name}__contains": value})
+    if op == "ilike":
+        return Q(**{f"{field_name}__icontains": value})
+    if op == "is_null":
+        return Q(**{f"{field_name}__isnull": bool(value)})
+
+    return Q()
+
+
 def apply_filters(queryset: QuerySet, filters: list[dict[str, Any]]) -> QuerySet:
     for item in filters:
-        field_name = _normalize_lookup(item["name"])
-        op = item.get("op", "eq")
-        value = item.get("val")
-
-        if op == "eq":
-            queryset = queryset.filter(**{field_name: value})
-        elif op == "ne":
-            queryset = queryset.exclude(**{field_name: value})
-        elif op == "lt":
-            queryset = queryset.filter(**{f"{field_name}__lt": value})
-        elif op == "le":
-            queryset = queryset.filter(**{f"{field_name}__lte": value})
-        elif op == "gt":
-            queryset = queryset.filter(**{f"{field_name}__gt": value})
-        elif op == "ge":
-            queryset = queryset.filter(**{f"{field_name}__gte": value})
-        elif op == "in":
-            values = value if isinstance(value, list) else [value]
-            queryset = queryset.filter(**{f"{field_name}__in": values})
-        elif op == "not_in":
-            values = value if isinstance(value, list) else [value]
-            queryset = queryset.exclude(**{f"{field_name}__in": values})
-        elif op == "like":
-            queryset = queryset.filter(**{f"{field_name}__contains": value})
-        elif op == "ilike":
-            queryset = queryset.filter(**{f"{field_name}__icontains": value})
-        elif op == "is_null":
-            queryset = queryset.filter(**{f"{field_name}__isnull": bool(value)})
+        queryset = queryset.filter(_build_condition_q(item))
 
     return queryset
 

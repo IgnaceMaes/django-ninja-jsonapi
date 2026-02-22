@@ -32,9 +32,33 @@ NINJA_JSONAPI = {
 - `include`
 - `fields[resource_type]`
 - `page[number]`, `page[size]`, `page[offset]`, `page[limit]`
+- `page[cursor]` (cursor pagination)
 
 ## Query parameter validation
 
 - Unknown query parameters are rejected with `400 Bad Request`.
 - Repeated parameters are rejected for non-`filter` keys (for example repeating `sort` or `page[size]`).
 - Repeating `filter[...]` keys is allowed.
+
+## Include-query optimization
+
+The Django ORM data layer now optimizes include paths automatically:
+
+- to-one include chains use `select_related`
+- to-many include chains use `prefetch_related`
+
+You can also provide explicit include optimization maps on your view:
+
+```python
+from django_ninja_jsonapi import ViewBaseGeneric
+
+
+class CustomerView(ViewBaseGeneric):
+    select_for_includes = {
+        "__all__": ["company"],
+        "owner": ["owner__profile"],
+    }
+    prefetch_for_includes = {
+        "owner": ["owner__groups"],
+    }
+```
