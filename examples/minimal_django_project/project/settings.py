@@ -1,10 +1,14 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "example-secret-key"
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "example-secret-key")
+DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() in {"1", "true", "yes", "on"}
+
+default_allowed_hosts = ["localhost", "127.0.0.1"]
+allowed_hosts_env = os.getenv("DJANGO_ALLOWED_HOSTS")
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()] if allowed_hosts_env else default_allowed_hosts
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -58,9 +62,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-JSONAPI = {
+NINJA_JSONAPI = {
     "PAGE_SIZE": 20,
     "MAX_PAGE_SIZE": 20,
     "MAX_INCLUDE_DEPTH": 3,
-    "ALLOW_DISABLE_PAGINATION": True,
+    "ALLOW_DISABLE_PAGINATION": False,
 }

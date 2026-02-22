@@ -64,8 +64,26 @@ def test_include_depth_limit_raises_invalid_include():
 
 
 @override_settings(NINJA_JSONAPI={"ALLOW_DISABLE_PAGINATION": False, "MAX_PAGE_SIZE": 100, "MAX_INCLUDE_DEPTH": 3})
-def test_disable_pagination_not_allowed_raises_bad_request():
+def test_disable_pagination_not_allowed_falls_back_to_default_size():
     request = RequestFactory().get("/api/users", {"page[size]": "0"})
+    pagination = QueryStringManager(request).pagination
 
-    with pytest.raises(BadRequest):
-        _ = QueryStringManager(request).pagination
+    assert pagination.size == 20
+
+
+@override_settings(NINJA_JSONAPI={"ALLOW_DISABLE_PAGINATION": False, "MAX_PAGE_SIZE": 100, "MAX_INCLUDE_DEPTH": 3})
+def test_negative_page_size_falls_back_to_default_size():
+    request = RequestFactory().get("/api/users", {"page[size]": "-1"})
+    pagination = QueryStringManager(request).pagination
+
+    assert pagination.size == 20
+
+
+@override_settings(NINJA_JSONAPI={"ALLOW_DISABLE_PAGINATION": False, "MAX_PAGE_SIZE": 50, "MAX_INCLUDE_DEPTH": 3})
+def test_offset_limit_strategy_clamps_negative_and_defaults_limit():
+    request = RequestFactory().get("/api/users", {"page[offset]": "-5", "page[limit]": "0"})
+    pagination = QueryStringManager(request).pagination
+
+    assert pagination.size is None
+    assert pagination.offset == 0
+    assert pagination.limit == 20

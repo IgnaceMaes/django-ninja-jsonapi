@@ -87,4 +87,5 @@ Values:
 - `GET_LIST`
 - `UPDATE`
 
-Use `Operation.ALL` to auto-expand to all concrete operations.
+Use `Operation.ALL` to auto-expand to default concrete operations (`CREATE`, `DELETE`, `GET`, `GET_LIST`, `UPDATE`).
+`DELETE_LIST` is not included in that expansion and must be added explicitly.

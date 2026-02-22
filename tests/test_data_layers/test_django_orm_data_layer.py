@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 import pytest
+from django.core.exceptions import FieldError
 from django.test import RequestFactory
 
 from django_ninja_jsonapi.data_layers.django_orm.orm import DjangoORMDataLayer
@@ -188,3 +189,34 @@ def test_apply_querystring_raises_bad_request_on_invalid_django_filterset():
         data_layer._apply_django_filterset(FakeQuerySet())
 
     assert "Invalid django-filter query parameters" in exc_info.value.as_dict["detail"]
+
+
+def test_apply_querystring_raises_bad_request_on_invalid_filter_or_sort(monkeypatch):
+    class FakeQuerySet:
+        def select_related(self, *args):
+            return self
+
+        def prefetch_related(self, *args):
+            return self
+
+        def only(self, *args):
+            return self
+
+    request = RequestFactory().get("/api/customers")
+    data_layer = DjangoORMDataLayer(
+        request=request,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+        resource_type="customer",
+    )
+
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.data_layers.django_orm.orm.apply_sorts",
+        lambda queryset, sorts: (_ for _ in ()).throw(FieldError("invalid sort field")),
+    )
+
+    qs = SimpleNamespace(filters=[], sorts=[{"field": "bad", "order": "asc"}], include=[], fields={})
+    with pytest.raises(BadRequest) as exc_info:
+        data_layer._apply_querystring(FakeQuerySet(), qs)
+
+    assert exc_info.value.as_dict["detail"] == "Invalid filter or sort query parameters"

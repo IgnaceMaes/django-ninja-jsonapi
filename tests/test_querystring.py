@@ -81,6 +81,26 @@ def test_querystring_keeps_limit_offset_strategy_without_page_size():
     assert manager.pagination.limit == 3
 
 
+def test_querystring_offset_limit_strategy_clamps_negative_and_defaults_limit():
+    request = RequestFactory().get("/api/users", {"page[offset]": "-1", "page[limit]": "-2"})
+
+    manager = QueryStringManager(request)
+
+    assert manager.pagination.size is None
+    assert manager.pagination.offset == 0
+    assert manager.pagination.limit == 20
+
+
+def test_querystring_invalid_pagination_value_raises_bad_request():
+    request = RequestFactory().get("/api/users", {"page[number]": "not-an-int"})
+
+    try:
+        _ = QueryStringManager(request).pagination
+        raise AssertionError("Expected BadRequest for invalid pagination parameter")
+    except BadRequest as exc:
+        assert exc.as_dict["source"] == {"parameter": "page"}
+
+
 def test_querystring_rejects_unknown_query_param():
     request = RequestFactory().get(
         "/api/users",

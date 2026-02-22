@@ -1,3 +1,4 @@
+import pytest
 from django.db.models import Q
 
 from django_ninja_jsonapi.data_layers.django_orm.query_building import apply_filters, apply_sorts
@@ -77,3 +78,15 @@ def test_apply_sorts_maps_relationship_paths_and_desc_order():
     assert queryset.calls == [
         ("order_by", ("-author__name", "created_at")),
     ]
+
+
+def test_apply_filters_rejects_unknown_operator():
+    queryset = FakeQuerySet()
+
+    with pytest.raises(ValueError, match="Unknown filter operator"):
+        apply_filters(
+            queryset,
+            [
+                {"name": "name", "op": "unsupported", "val": "john"},
+            ],
+        )

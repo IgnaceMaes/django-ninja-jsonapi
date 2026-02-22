@@ -8,7 +8,7 @@
 NINJA_JSONAPI = {
     "MAX_PAGE_SIZE": 20,
     "MAX_INCLUDE_DEPTH": 3,
-    "ALLOW_DISABLE_PAGINATION": True,
+    "ALLOW_DISABLE_PAGINATION": False,
     "INCLUDE_JSONAPI_OBJECT": False,
     "JSONAPI_VERSION": "1.0",
 }
@@ -19,6 +19,8 @@ NINJA_JSONAPI = {
 - `MAX_PAGE_SIZE`: hard upper limit for `page[size]`.
 - `MAX_INCLUDE_DEPTH`: maximum include chain depth (for example `a.b.c`).
 - `ALLOW_DISABLE_PAGINATION`: allows/disallows `page[size]=0`.
+    - When `True`, `page[size]=0` disables pagination.
+    - When `False`, `page[size]=0` falls back to the default page size.
 - `INCLUDE_JSONAPI_OBJECT`: when `True`, adds top-level `jsonapi` object to responses.
 - `JSONAPI_VERSION`: version string used when `INCLUDE_JSONAPI_OBJECT=True`.
 

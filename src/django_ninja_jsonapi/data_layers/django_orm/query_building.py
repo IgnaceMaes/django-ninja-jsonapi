@@ -59,7 +59,7 @@ def _build_condition_q(item: dict[str, Any]) -> Q:
     if op == "is_null":
         return Q(**{f"{field_name}__isnull": bool(value)})
 
-    return Q()
+    raise ValueError(f"Unknown filter operator: {op}")
 
 
 def apply_filters(queryset: QuerySet, filters: list[dict[str, Any]]) -> QuerySet:

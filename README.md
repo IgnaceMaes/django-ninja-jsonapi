@@ -123,46 +123,6 @@ Additional view/schema options:
 from django_ninja_jsonapi import ApplicationBuilder, QueryStringManager, HTTPException, BadRequest, ViewBaseGeneric
 ```
 
-## Development
+## Contributing
 
-```bash
-uv run ruff format src tests
-uv run ruff check src tests
-uv run pytest --cov=src/django_ninja_jsonapi --cov-report=term-missing
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution workflow.
-
-## Release process
-
-Releases are automated with GitHub Actions:
-
-1. Merge conventional-commit PRs into `main`.
-2. `Release Please` opens or updates a release PR with version bump + changelog updates.
-3. Merge the release PR to create a GitHub Release.
-4. `Publish to PyPI` runs on `release: published` and uploads the built package to PyPI.
-
-Workflows:
-
-- `.github/workflows/release-please.yml`
-- `.github/workflows/publish.yml`
-
-Required repository secrets:
-
-- `REPO_ADMIN_TOKEN` (used by Release Please)
-- `PYPI_API_TOKEN` (used for PyPI publishing)
-
-## Test coverage
-
-Current tests cover:
-
-- Application builder initialization and route registration behavior
-- Query-string parsing behavior
-- Django ORM query-building mapping (`filter`/`sort` translation)
-- Exception handler response shape
-
-## Notes
-
-- This project is Django Ninja + Django ORM focused.
-- SQLAlchemy-specific modules have been removed to keep the codebase simpler and consistent.
-- CI runs on pull requests and pushes to `main`.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, local checks, contribution workflow, and maintainer release notes.

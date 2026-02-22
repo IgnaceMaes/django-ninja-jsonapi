@@ -18,6 +18,7 @@ builder.add_resource(
 ```
 
 For each resource, the builder creates list/detail CRUD endpoints and relationship endpoints when relationship metadata exists.
+Collection `DELETE` is not registered by default; include `Operation.DELETE_LIST` explicitly when needed.
 
 ## Path conventions
 

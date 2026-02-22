@@ -13,8 +13,12 @@ class Operation(str, Enum):
     UPDATE = auto()
 
     @staticmethod
-    def real_operations() -> list[Operation]:
-        return list(filter(lambda op: op != Operation.ALL, Operation))
+    def real_operations(include_delete_list: bool = False) -> list[Operation]:
+        operations = [operation for operation in Operation if operation != Operation.ALL]
+        if include_delete_list:
+            return operations
+
+        return [operation for operation in operations if operation != Operation.DELETE_LIST]
 
     def http_method(self) -> str:
         if self == Operation.ALL:

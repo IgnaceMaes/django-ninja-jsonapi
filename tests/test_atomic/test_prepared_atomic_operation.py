@@ -1,10 +1,12 @@
 from types import SimpleNamespace
 
 import pytest
+from pydantic import BaseModel
 
-from django_ninja_jsonapi.atomic.prepared_atomic_operation import OperationRemove, OperationUpdate
+from django_ninja_jsonapi.atomic.prepared_atomic_operation import OperationBase, OperationRemove, OperationUpdate
 from django_ninja_jsonapi.atomic.schemas import AtomicOperationRef, OperationItemInSchema, OperationRelationshipSchema
 from django_ninja_jsonapi.types_metadata import RelationshipInfo
+from django_ninja_jsonapi.views import Operation, OperationConfig
 
 
 class DummyDL:
@@ -168,3 +170,33 @@ async def test_operation_remove_requires_ref_id():
 
     with pytest.raises(ValueError, match="Atomic remove operation requires target resource id"):
         await op.handle(DummyDL())
+
+
+@pytest.mark.asyncio
+async def test_handle_view_dependencies_merges_all_and_specific_defaults():
+    class CommonDeps(BaseModel):
+        page_size: int = 10
+        source: str = "common"
+
+    class UpdateDeps(BaseModel):
+        source: str = "update"
+        include_archived: bool = False
+
+    class DummyViewWithDeps:
+        operation_dependencies = {
+            Operation.ALL: OperationConfig(dependencies=CommonDeps),
+            Operation.UPDATE: OperationConfig(dependencies=UpdateDeps),
+        }
+
+    merged = await OperationBase.handle_view_dependencies(
+        request=SimpleNamespace(),
+        view_cls=DummyViewWithDeps,
+        resource_type="user",
+        operation=Operation.UPDATE,
+    )
+
+    assert merged == {
+        "page_size": 10,
+        "source": "update",
+        "include_archived": False,
+    }

@@ -4,6 +4,7 @@ from typing import Any, Awaitable, Callable
 from django.http import HttpRequest
 
 from django_ninja_jsonapi.api.schemas import ResourceData
+from django_ninja_jsonapi.exceptions import BadRequest
 from django_ninja_jsonapi.views.enums import Operation
 
 
@@ -23,8 +24,11 @@ class EndpointsBuilder:
 
     @staticmethod
     def _parse_json_body(request: HttpRequest) -> dict[str, Any]:
-        raw = request.body.decode() if request.body else "{}"
-        return json.loads(raw)
+        try:
+            raw = request.body.decode() if request.body else "{}"
+            return json.loads(raw)
+        except (json.JSONDecodeError, UnicodeDecodeError) as ex:
+            raise BadRequest(detail="Malformed JSON request body", parameter="body") from ex
 
     def create_common_ninja_endpoint(self, operation: Operation) -> tuple[str, Callable[..., Awaitable[Any]]]:
         if operation == Operation.GET:

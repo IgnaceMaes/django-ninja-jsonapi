@@ -61,12 +61,30 @@ class SchemaBuilder:
         schema_in_post: Optional[Type[BaseModel]] = None,
         schema_in_patch: Optional[Type[BaseModel]] = None,
     ) -> BuiltSchemasDTO:
+        schema_in_post_is_defaulted = schema_in_post is None
+        if schema_in_post_is_defaulted:
+            log.warning(
+                "Resource %r uses output schema %r as input schema for create operations. "
+                "Using the output schema for writes may unintentionally make fields writable. "
+                "Pass an explicit 'schema_in_post' to control writable fields.",
+                self._resource_type,
+                schema.__name__,
+            )
         schema_in_post = schema_in_post or schema
         schema_name_in_post_suffix = ""
 
         if any(schema_in_post is cmp_schema for cmp_schema in [schema, schema_in_patch]):
             schema_name_in_post_suffix = "InPost"
 
+        schema_in_patch_is_defaulted = schema_in_patch is None
+        if schema_in_patch_is_defaulted:
+            log.warning(
+                "Resource %r uses output schema %r as input schema for update operations. "
+                "Using the output schema for writes may unintentionally make fields writable. "
+                "Pass an explicit 'schema_in_patch' to control writable fields.",
+                self._resource_type,
+                schema.__name__,
+            )
         schema_in_patch = schema_in_patch or schema
         schema_name_in_patch_suffix = ""
 

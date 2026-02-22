@@ -67,3 +67,4 @@ GET /customers?page[size]=0
 ```
 
 This only works when `NINJA_JSONAPI["ALLOW_DISABLE_PAGINATION"]` is `True`.
+When `ALLOW_DISABLE_PAGINATION` is `False`, `page[size]=0` falls back to the default page size.

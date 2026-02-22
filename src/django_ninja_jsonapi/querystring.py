@@ -9,7 +9,7 @@ from urllib.parse import unquote
 import orjson as json
 from django.conf import settings
 from django.http import HttpRequest
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from django_ninja_jsonapi.exceptions import (
     BadRequest,
@@ -67,7 +67,7 @@ class QueryStringManager:
         self.request: HttpRequest = request
         self.qs = request.GET
         self.config: dict[str, Any] = getattr(settings, "NINJA_JSONAPI", {})
-        self.ALLOW_DISABLE_PAGINATION: bool = self.config.get("ALLOW_DISABLE_PAGINATION", True)
+        self.ALLOW_DISABLE_PAGINATION: bool = self.config.get("ALLOW_DISABLE_PAGINATION", False)
         self.MAX_PAGE_SIZE: int = self.config.get("MAX_PAGE_SIZE", 20)
         self.MAX_INCLUDE_DEPTH: int = self.config.get("MAX_INCLUDE_DEPTH", 3)
         self.headers: HeadersQueryStringManager = HeadersQueryStringManager(**dict(self.request.headers))
@@ -222,17 +222,31 @@ class QueryStringManager:
         """
         # check values type
         pagination_data: dict[str, str] = self._get_unique_key_values("page")
-        pagination = PaginationQueryStringManager(**pagination_data)
-        if pagination_data.get("size") is None and (
+        try:
+            pagination = PaginationQueryStringManager(**pagination_data)
+        except ValidationError as ex:
+            raise BadRequest(detail="Invalid pagination query parameter", parameter="page") from ex
+
+        has_offset_limit_strategy = pagination_data.get("size") is None and (
             pagination_data.get("offset") is not None or pagination_data.get("limit") is not None
-        ):
+        )
+        if has_offset_limit_strategy:
             pagination.size = None
-        if pagination.size is not None:
-            if pagination.size == 0 and not self.ALLOW_DISABLE_PAGINATION:
-                msg = "You are not allowed to disable pagination"
-                raise BadRequest(msg, parameter="page[size]")
-            if self.MAX_PAGE_SIZE and pagination.size > self.MAX_PAGE_SIZE:
-                pagination.size = self.MAX_PAGE_SIZE
+            pagination.offset = max(0, pagination.offset or 0)
+            if pagination.limit is None or pagination.limit <= 0:
+                pagination.limit = 20
+            if self.MAX_PAGE_SIZE and pagination.limit > self.MAX_PAGE_SIZE:
+                pagination.limit = self.MAX_PAGE_SIZE
+            return pagination
+
+        if pagination.size is not None and pagination.size <= 0:
+            if pagination.size == 0 and self.ALLOW_DISABLE_PAGINATION:
+                pagination.size = None
+            else:
+                pagination.size = 20
+
+        if pagination.size is not None and self.MAX_PAGE_SIZE and pagination.size > self.MAX_PAGE_SIZE:
+            pagination.size = self.MAX_PAGE_SIZE
 
         return pagination
 

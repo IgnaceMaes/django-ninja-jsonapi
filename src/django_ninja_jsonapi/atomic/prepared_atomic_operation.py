@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Type
+from typing import Any, Optional, Type
 
 from django.http import HttpRequest
 
@@ -18,7 +18,7 @@ from django_ninja_jsonapi.storages import models_storage, schemas_storage, views
 from django_ninja_jsonapi.views import Operation, OperationConfig, ViewBase
 
 LocalIdsType = dict[str, dict[str, str]]
-atomic_dependency_handlers: dict[(str, Operation), Callable] = {}
+atomic_dependency_handlers: dict[(str, Operation), dict[str, Any]] = {}
 
 
 @dataclass
@@ -95,22 +95,25 @@ class OperationBase:
         """
         handler_key = (resource_type, operation)
 
-        if handler_key not in atomic_dependency_handlers:
-            method_config: OperationConfig = view_cls.operation_dependencies.get(operation) or OperationConfig()
+        if handler_key in atomic_dependency_handlers:
+            return atomic_dependency_handlers[handler_key]
 
-            def handle_dependencies() -> dict[str, Any]:
-                if method_config.dependencies is None:
-                    return {}
+        merged_defaults: dict[str, Any] = {}
+        dependency_configs = [
+            view_cls.operation_dependencies.get(Operation.ALL),
+            view_cls.operation_dependencies.get(operation),
+        ]
+        for method_config in dependency_configs:
+            if method_config is None:
+                continue
 
-                dep_model = method_config.dependencies
-                if dep_model is None:
-                    return {}
+            if not isinstance(method_config, OperationConfig) or method_config.dependencies is None:
+                continue
 
-                return dep_model().model_dump()
+            merged_defaults.update(method_config.dependencies().model_dump())
 
-            atomic_dependency_handlers[handler_key] = handle_dependencies
-
-        return atomic_dependency_handlers[handler_key]()
+        atomic_dependency_handlers[handler_key] = merged_defaults
+        return merged_defaults
 
     async def get_data_layer(self) -> BaseDataLayer:
         data_layer_view_dependencies: dict[str, Any] = await self.handle_view_dependencies(

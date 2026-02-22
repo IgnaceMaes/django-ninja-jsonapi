@@ -3,14 +3,14 @@ from __future__ import annotations
 from typing import Optional
 
 from asgiref.sync import sync_to_async
-from django.core.exceptions import FieldDoesNotExist
+from django.core.exceptions import FieldDoesNotExist, FieldError
 from django.db import transaction
 
 from django_ninja_jsonapi.common import get_relationship_info_from_field_metadata
 from django_ninja_jsonapi.data_layers.base import BaseDataLayer
 from django_ninja_jsonapi.data_layers.django_orm.base_model import BaseDjangoORM
 from django_ninja_jsonapi.data_layers.django_orm.query_building import apply_filters, apply_sorts
-from django_ninja_jsonapi.exceptions import InvalidInclude, RelationNotFound
+from django_ninja_jsonapi.exceptions import BadRequest, InvalidInclude, RelationNotFound
 from django_ninja_jsonapi.querystring import QueryStringManager
 from django_ninja_jsonapi.schema import BaseJSONAPIItemInSchema
 from django_ninja_jsonapi.storages.models_storage import models_storage
@@ -323,8 +323,11 @@ class DjangoORMDataLayer(BaseDataLayer):
 
     def _apply_querystring(self, queryset, qs: QueryStringManager):
         queryset = self._apply_django_filterset(queryset)
-        queryset = apply_filters(queryset, qs.filters)
-        queryset = apply_sorts(queryset, qs.sorts)
+        try:
+            queryset = apply_filters(queryset, qs.filters)
+            queryset = apply_sorts(queryset, qs.sorts)
+        except (FieldError, ValueError, TypeError) as ex:
+            raise BadRequest(detail="Invalid filter or sort query parameters") from ex
 
         include_selects, include_prefetches = self._resolve_include_optimizations(qs.include)
         if include_selects:

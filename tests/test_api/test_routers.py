@@ -73,6 +73,25 @@ def test_limited_operations_register_only_requested_http_methods():
     assert path_methods["/dummy/{obj_id}/"] == {"GET"}
 
 
+def test_default_operations_do_not_register_delete_on_list_route():
+    api = NinjaAPI()
+    builder = ApplicationBuilder(api)
+
+    builder.add_resource(
+        path="/dummy",
+        tags=["dummy"],
+        resource_type="dummy",
+        view=DummyView,
+        model=DummyModel,
+        schema=DummySchema,
+    )
+    builder.initialize()
+
+    path_methods = _collect_path_methods(api)
+
+    assert "DELETE" not in path_methods["/dummy/"]
+
+
 def test_resource_registration_guards_duplicate_resource_type():
     api = NinjaAPI()
     builder = ApplicationBuilder(api)
