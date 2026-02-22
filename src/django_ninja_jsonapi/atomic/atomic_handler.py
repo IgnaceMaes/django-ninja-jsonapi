@@ -11,7 +11,12 @@ from django.http import HttpRequest
 from pydantic import ValidationError
 
 from django_ninja_jsonapi.atomic.prepared_atomic_operation import LocalIdsType, OperationBase
-from django_ninja_jsonapi.atomic.schemas import AtomicOperation, AtomicOperationRequest, AtomicResultResponse
+from django_ninja_jsonapi.atomic.schemas import (
+    AtomicOperation,
+    AtomicOperationRequest,
+    AtomicResultResponse,
+    OperationItemInSchema,
+)
 from django_ninja_jsonapi.exceptions import HTTPException
 from django_ninja_jsonapi.storages.schemas_storage import schemas_storage
 
@@ -38,7 +43,7 @@ def catch_exc_on_operation_handle(func: Callable[..., Awaitable]):
             errors_details = {
                 "message": f"Validation error on operation {operation.op_type}",
                 "ref": operation.ref,
-                "data": operation.data.model_dump(),
+                "data": operation.data.model_dump() if hasattr(operation.data, "model_dump") else operation.data,
             }
             if isinstance(ex, ValidationError):
                 errors_details.update(errors=ex.errors())
@@ -135,29 +140,29 @@ class AtomicViewHandler:
         for operation in prepared_operations:
             # set context var
             ctx_var_token = current_atomic_operation.set(operation)
+            try:
+                response, dl = await self.process_next_operation(operation, previous_dl)
+                previous_dl = dl
 
-            response, dl = await self.process_next_operation(operation, previous_dl)
-            previous_dl = dl
+                # response.data.id
+                if not response:
+                    # https://jsonapi.org/ext/atomic/#result-objects
+                    # An empty result object ({}) is acceptable
+                    # for operations that are not required to return data.
+                    results.append({})
+                    continue
+                only_empty_responses = False
 
-            # response.data.id
-            if not response:
-                # https://jsonapi.org/ext/atomic/#result-objects
-                # An empty result object ({}) is acceptable
-                # for operations that are not required to return data.
-                results.append({})
-                continue
-            only_empty_responses = False
+                data = response["data"]
+                results.append(
+                    {"data": data},
+                )
 
-            data = response["data"]
-            results.append(
-                {"data": data},
-            )
-
-            if operation.data.lid and data:
-                self.local_ids_cache[operation.data.type][operation.data.lid] = data["id"]
-
-            # reset context var
-            current_atomic_operation.reset(ctx_var_token)
+                if isinstance(operation.data, OperationItemInSchema) and operation.data.lid and data and "id" in data:
+                    self.local_ids_cache[operation.data.type][operation.data.lid] = data["id"]
+            finally:
+                # reset context var even when operation fails
+                current_atomic_operation.reset(ctx_var_token)
 
         if previous_dl:
             await previous_dl.atomic_end(success=success)

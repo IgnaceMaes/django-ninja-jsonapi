@@ -5,7 +5,13 @@ from typing import Any, Callable, Optional, Type
 
 from django.http import HttpRequest
 
-from django_ninja_jsonapi.atomic.schemas import AtomicOperationAction, AtomicOperationRef, OperationDataType
+from django_ninja_jsonapi.atomic.schemas import (
+    AtomicOperationAction,
+    AtomicOperationRef,
+    OperationDataType,
+    OperationItemInSchema,
+    OperationRelationshipSchema,
+)
 from django_ninja_jsonapi.data_layers.base import BaseDataLayer
 from django_ninja_jsonapi.data_typing import TypeSchema
 from django_ninja_jsonapi.storages import models_storage, schemas_storage, views_storage
@@ -151,9 +157,74 @@ class OperationBase:
         relationship_info.pop("lid")
         relationship_info["id"] = lids_for_resource[lid]
 
-    def update_relationships_with_lid(self, local_ids: LocalIdsType):
-        if not (self.data and self.data.relationships):
+    @classmethod
+    def _replace_lid_with_id(
+        cls,
+        *,
+        resource_type: str,
+        lid: str,
+        local_ids: LocalIdsType,
+    ) -> str:
+        if resource_type not in local_ids:
+            msg = f"Resource {resource_type!r} not found in previous operations for lid {lid!r}."
+            raise ValueError(msg)
+
+        resource_local_ids = local_ids[resource_type]
+        if lid not in resource_local_ids:
+            msg = f"lid {lid!r} for {resource_type!r} not found in previous operations."
+            raise ValueError(msg)
+
+        return resource_local_ids[lid]
+
+    @classmethod
+    def _update_relationship_lid_model(
+        cls,
+        relationship_data: OperationRelationshipSchema,
+        local_ids: LocalIdsType,
+    ):
+        if relationship_data.lid is None:
             return
+
+        relationship_data.id = cls._replace_lid_with_id(
+            resource_type=relationship_data.type,
+            lid=relationship_data.lid,
+            local_ids=local_ids,
+        )
+        relationship_data.lid = None
+
+    def update_relationships_with_lid(self, local_ids: LocalIdsType):
+        if self.ref is not None and self.ref.lid is not None:
+            self.ref.id = self._replace_lid_with_id(
+                resource_type=self.ref.type,
+                lid=self.ref.lid,
+                local_ids=local_ids,
+            )
+            self.ref.lid = None
+
+        if isinstance(self.data, OperationRelationshipSchema):
+            self._update_relationship_lid_model(self.data, local_ids)
+            return
+
+        if isinstance(self.data, list):
+            for relationship_data in self.data:
+                if isinstance(relationship_data, OperationRelationshipSchema):
+                    self._update_relationship_lid_model(relationship_data, local_ids)
+            return
+
+        if not isinstance(self.data, OperationItemInSchema):
+            return
+
+        if self.data.lid is not None and self.data.id is None:
+            self.data.id = self._replace_lid_with_id(
+                resource_type=self.data.type,
+                lid=self.data.lid,
+                local_ids=local_ids,
+            )
+            self.data.lid = None
+
+        if self.data.relationships is None:
+            return
+
         for relationship_value in self.data.relationships.values():
             relationship_data = relationship_value["data"]
             if isinstance(relationship_data, list):
@@ -161,6 +232,8 @@ class OperationBase:
                     self.upd_one_relationship_with_local_id(data, local_ids=local_ids)
             elif isinstance(relationship_data, dict):
                 self.upd_one_relationship_with_local_id(relationship_data, local_ids=local_ids)
+            elif relationship_data is None:
+                continue
             else:
                 msg = "unexpected relationship data"
                 raise ValueError(msg)
@@ -181,17 +254,59 @@ class OperationAdd(OperationBase):
 
 class OperationUpdate(OperationBase):
     async def handle(self, dl: BaseDataLayer) -> dict:
-        if self.data is None:
-            # TODO: clear to-one relationships
-            pass
-        # TODO: handle relationship update requests (relationship resources)
+        obj_id = (self.ref and self.ref.id) or (self.data and getattr(self.data, "id", None))
+        if obj_id is None:
+            msg = "Object id is required for atomic update operation"
+            raise ValueError(msg)
+
+        if self.ref and self.ref.relationship:
+            relationship_info = schemas_storage.get_relationship_info(
+                resource_type=self.resource_type,
+                operation_type="get",
+                field_name=self.ref.relationship,
+            )
+            if relationship_info is None:
+                msg = f"Relationship {self.ref.relationship!r} not found for {self.resource_type!r}"
+                raise ValueError(msg)
+
+            if self.data is not None and not isinstance(
+                self.data,
+                (OperationRelationshipSchema, list),
+            ):
+                msg = (
+                    "Atomic relationship update expects relationship linkage data "
+                    "(resource identifier object, list, or null)"
+                )
+                raise ValueError(msg)
+
+            if isinstance(self.data, list):
+                payload_data = [item.model_dump(exclude_none=True) for item in self.data]
+            elif isinstance(self.data, OperationRelationshipSchema):
+                payload_data = self.data.model_dump(exclude_none=True)
+            elif self.data is None:
+                payload_data = None
+            else:
+                payload_data = self.data.model_dump(exclude_none=True)
+
+            await dl.update_relationship(
+                json_data={"data": payload_data},
+                relationship_field=self.ref.relationship,
+                related_id_field=relationship_info.id_field_name,
+                view_kwargs={dl.url_id_field: obj_id},
+            )
+            return await self.view.handle_get_resource_detail(obj_id=obj_id)
+
+        if not isinstance(self.data, OperationItemInSchema):
+            msg = "Atomic update for resource attributes expects resource object data"
+            raise ValueError(msg)
 
         # use outer schema wrapper because we need this error path:
         # `{'loc': ['data', 'attributes', 'name']`
         # and not `{'loc': ['attributes', 'name']`
-        schema_in_update = schemas_storage.get_schema_in(self.resource_type, operation_type="create")
-        data_in = schema_in_update(data=self.data.model_dump(exclude_unset=True))
-        obj_id = (self.ref and self.ref.id) or (self.data and self.data.id)
+        schema_in_update = schemas_storage.get_schema_in(self.resource_type, operation_type="update")
+        payload_data = self.data.model_dump(exclude_unset=True)
+        payload_data.setdefault("id", obj_id)
+        data_in = schema_in_update(data=payload_data)
         return await self.view.process_update_object(
             dl=dl,
             obj_id=obj_id,
@@ -217,7 +332,11 @@ class OperationRemove(OperationBase):
         :param dl:
         :return:
         """
+        if self.ref is None or self.ref.id is None:
+            msg = "Atomic remove operation requires target resource id in ref"
+            raise ValueError(msg)
+
         await self.view.process_delete_object(
             dl=dl,
-            obj_id=self.ref and self.ref.id,
+            obj_id=self.ref.id,
         )
