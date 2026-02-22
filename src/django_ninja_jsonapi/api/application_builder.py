@@ -146,7 +146,10 @@ class ApplicationBuilder:
                     continue
 
                 operation = Operation.GET_LIST if info.many else Operation.GET
-                relationship_builder = EndpointsBuilder(info.resource_type, self._resource_data.get(info.resource_type, data))
+                relationship_builder = EndpointsBuilder(
+                    info.resource_type,
+                    self._resource_data.get(info.resource_type, data),
+                )
                 relationship_name_id, relationship_endpoint = relationship_builder.create_relationship_endpoint(
                     parent_resource_type=resource_type,
                     relationship_name=relationship_name,
