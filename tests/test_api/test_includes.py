@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
 import pytest
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 
 from django_ninja_jsonapi.data_layers.django_orm.orm import DjangoORMDataLayer
 from django_ninja_jsonapi.exceptions import InvalidInclude
@@ -391,3 +391,72 @@ def test_build_list_response_with_cursor_has_next_link(monkeypatch):
 
     assert response["links"]["next"] is not None
     assert "page%5Bcursor%5D=12" in response["links"]["next"]
+
+
+def test_detail_response_omits_jsonapi_by_default(monkeypatch):
+    request = RequestFactory().get("/api/customers/1")
+    view = DummyView(
+        request=request,
+        resource_type="customer",
+        operation=Operation.GET,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+    )
+
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.models_storage.get_resource_path",
+        lambda resource_type: "/customers",
+    )
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.models_storage.get_object_id",
+        lambda db_item, resource_type: db_item.id,
+    )
+    monkeypatch.setattr(
+        view,
+        "_prepare_item_data",
+        lambda db_item, resource_type, include_fields=None: {
+            "id": str(db_item.id),
+            "type": resource_type,
+            "attributes": {},
+            "links": {},
+        },
+    )
+
+    response = view._build_detail_response(SimpleNamespace(id=1))
+
+    assert "jsonapi" not in response
+
+
+@override_settings(NINJA_JSONAPI={"INCLUDE_JSONAPI_OBJECT": True, "JSONAPI_VERSION": "1.0"})
+def test_detail_response_includes_jsonapi_when_enabled(monkeypatch):
+    request = RequestFactory().get("/api/customers/1")
+    view = DummyView(
+        request=request,
+        resource_type="customer",
+        operation=Operation.GET,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+    )
+
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.models_storage.get_resource_path",
+        lambda resource_type: "/customers",
+    )
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.models_storage.get_object_id",
+        lambda db_item, resource_type: db_item.id,
+    )
+    monkeypatch.setattr(
+        view,
+        "_prepare_item_data",
+        lambda db_item, resource_type, include_fields=None: {
+            "id": str(db_item.id),
+            "type": resource_type,
+            "attributes": {},
+            "links": {},
+        },
+    )
+
+    response = view._build_detail_response(SimpleNamespace(id=1))
+
+    assert response["jsonapi"] == {"version": "1.0"}

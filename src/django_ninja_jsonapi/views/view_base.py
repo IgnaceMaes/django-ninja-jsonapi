@@ -52,6 +52,8 @@ class ViewBase:
         self.schema: Type[TypeSchema] = schema
         self.options: dict = options
         self.query_params: QueryStringManager = QueryStringManager(request=request)
+        self.include_jsonapi_object: bool = self.query_params.config.get("INCLUDE_JSONAPI_OBJECT", False)
+        self.jsonapi_version: str = str(self.query_params.config.get("JSONAPI_VERSION", "1.0"))
         self._api_prefix: Optional[str] = None
         self._validate_include_paths()
 
@@ -621,10 +623,11 @@ class ViewBase:
         )
         response = {
             "data": item_data,
-            "jsonapi": {"version": "1.0"},
             "meta": None,
             "links": {"self": self.request.build_absolute_uri(self.request.get_full_path())},
         }
+        if self.include_jsonapi_object:
+            response["jsonapi"] = {"version": self.jsonapi_version}
 
         if self.query_params.include:
             included = self._process_includes(
@@ -655,10 +658,11 @@ class ViewBase:
             )
         response = {
             "data": items_data,
-            "jsonapi": {"version": "1.0"},
             "meta": {"count": count, "totalPages": total_pages},
             "links": self._build_pagination_links(count=count, total_pages=total_pages),
         }
+        if self.include_jsonapi_object:
+            response["jsonapi"] = {"version": self.jsonapi_version}
 
         if self.query_params.include:
             included = self._process_includes(

@@ -113,8 +113,8 @@ class BaseJSONAPIResultSchema(BaseModel):
         from_attributes=True,
     )
 
+    jsonapi: Optional[JSONAPIDocumentObjectSchema] = Field(default=None, description="JSON:API version object")
     meta: Optional[JSONAPIResultListMetaSchema] = Field(default=None, description="JSON:API metadata")
-    jsonapi: JSONAPIDocumentObjectSchema = JSONAPIDocumentObjectSchema()
     links: Optional[dict[str, Any]] = Field(default=None, description="Top level document links")
 
 
