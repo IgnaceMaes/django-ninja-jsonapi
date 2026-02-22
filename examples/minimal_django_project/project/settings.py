@@ -8,7 +8,11 @@ DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() in {"1", "true", "yes", "on"}
 
 default_allowed_hosts = ["localhost", "127.0.0.1"]
 allowed_hosts_env = os.getenv("DJANGO_ALLOWED_HOSTS")
-ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()] if allowed_hosts_env else default_allowed_hosts
+ALLOWED_HOSTS = (
+    [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
+    if allowed_hosts_env
+    else default_allowed_hosts
+)
 
 INSTALLED_APPS = [
     "django.contrib.auth",
