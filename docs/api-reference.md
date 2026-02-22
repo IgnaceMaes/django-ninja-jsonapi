@@ -36,7 +36,7 @@ Parameters:
 - `router: Router | None = None`
 - `schema_in_post: type[BaseModel] | None = None`
 - `schema_in_patch: type[BaseModel] | None = None`
-- `pagination_default_size: int | None = 25`
+- `pagination_default_size: int | None = 20`
 - `pagination_default_number: int | None = 1`
 - `pagination_default_offset: int | None = None`
 - `pagination_default_limit: int | None = None`

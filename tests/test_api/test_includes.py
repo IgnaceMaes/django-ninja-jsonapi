@@ -393,6 +393,45 @@ def test_build_list_response_with_cursor_has_next_link(monkeypatch):
     assert "page%5Bcursor%5D=12" in response["links"]["next"]
 
 
+def test_build_list_response_uses_default_page_size_in_links(monkeypatch):
+    request = RequestFactory().get("/api/customers")
+    view = DummyView(
+        request=request,
+        resource_type="customer",
+        operation=Operation.GET_LIST,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+    )
+
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.models_storage.get_resource_path",
+        lambda resource_type: "/customers",
+    )
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.models_storage.get_object_id",
+        lambda db_item, resource_type: db_item.id,
+    )
+    monkeypatch.setattr(
+        view,
+        "_prepare_item_data",
+        lambda db_item, resource_type, include_fields=None: {
+            "id": str(db_item.id),
+            "type": resource_type,
+            "attributes": {},
+            "links": {},
+        },
+    )
+
+    response = view._build_list_response(
+        items_from_db=[SimpleNamespace(id=1)],
+        count=12,
+        total_pages=2,
+    )
+
+    assert "page%5Bsize%5D=20" in response["links"]["first"]
+    assert "page%5Bnumber%5D=2" in response["links"]["next"]
+
+
 def test_detail_response_omits_jsonapi_by_default(monkeypatch):
     request = RequestFactory().get("/api/customers/1")
     view = DummyView(

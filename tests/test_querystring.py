@@ -54,6 +54,33 @@ def test_querystring_cursor_pagination_parsing():
     assert manager.pagination.size == 10
 
 
+def test_querystring_defaults_page_size_to_twenty_when_not_provided():
+    request = RequestFactory().get("/api/users")
+
+    manager = QueryStringManager(request)
+
+    assert manager.pagination.number == 1
+    assert manager.pagination.size == 20
+
+
+def test_querystring_clamps_page_size_to_default_max_when_not_configured():
+    request = RequestFactory().get("/api/users", {"page[size]": "999"})
+
+    manager = QueryStringManager(request)
+
+    assert manager.pagination.size == 20
+
+
+def test_querystring_keeps_limit_offset_strategy_without_page_size():
+    request = RequestFactory().get("/api/users", {"page[offset]": "5", "page[limit]": "3"})
+
+    manager = QueryStringManager(request)
+
+    assert manager.pagination.size is None
+    assert manager.pagination.offset == 5
+    assert manager.pagination.limit == 3
+
+
 def test_querystring_rejects_unknown_query_param():
     request = RequestFactory().get(
         "/api/users",

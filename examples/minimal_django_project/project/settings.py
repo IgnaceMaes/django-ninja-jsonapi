@@ -59,8 +59,8 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 JSONAPI = {
-    "PAGE_SIZE": 10,
-    "MAX_PAGE_SIZE": 100,
+    "PAGE_SIZE": 20,
+    "MAX_PAGE_SIZE": 20,
     "MAX_INCLUDE_DEPTH": 3,
     "ALLOW_DISABLE_PAGINATION": True,
 }

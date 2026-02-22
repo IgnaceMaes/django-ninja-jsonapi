@@ -18,7 +18,7 @@ class ResourceData(BaseModel):
     schema_in_patch_data: Type[BaseModel]
     detail_response_schema: Type[BaseModel]
     list_response_schema: Type[BaseModel]
-    pagination_default_size: Optional[int] = 25
+    pagination_default_size: Optional[int] = 20
     pagination_default_number: Optional[int] = 1
     pagination_default_offset: Optional[int] = None
     pagination_default_limit: Optional[int] = None

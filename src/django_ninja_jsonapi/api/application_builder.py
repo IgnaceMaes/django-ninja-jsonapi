@@ -51,7 +51,7 @@ class ApplicationBuilder:
         router: Optional[Router] = None,
         schema_in_post: Optional[Type[BaseModel]] = None,
         schema_in_patch: Optional[Type[BaseModel]] = None,
-        pagination_default_size: Optional[int] = 25,
+        pagination_default_size: Optional[int] = 20,
         pagination_default_number: Optional[int] = 1,
         pagination_default_offset: Optional[int] = None,
         pagination_default_limit: Optional[int] = None,

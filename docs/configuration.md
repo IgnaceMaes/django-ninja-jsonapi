@@ -6,7 +6,7 @@
 
 ```python
 NINJA_JSONAPI = {
-    "MAX_PAGE_SIZE": 100,
+    "MAX_PAGE_SIZE": 20,
     "MAX_INCLUDE_DEPTH": 3,
     "ALLOW_DISABLE_PAGINATION": True,
     "INCLUDE_JSONAPI_OBJECT": False,

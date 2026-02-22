@@ -29,7 +29,7 @@ class PaginationQueryStringManager(BaseModel):
     """
 
     offset: Optional[int] = None
-    size: Optional[int] = 25
+    size: Optional[int] = 20
     number: int = 1
     limit: Optional[int] = None
     cursor: Optional[str] = None
@@ -68,7 +68,7 @@ class QueryStringManager:
         self.qs = request.GET
         self.config: dict[str, Any] = getattr(settings, "NINJA_JSONAPI", {})
         self.ALLOW_DISABLE_PAGINATION: bool = self.config.get("ALLOW_DISABLE_PAGINATION", True)
-        self.MAX_PAGE_SIZE: int = self.config.get("MAX_PAGE_SIZE", 10000)
+        self.MAX_PAGE_SIZE: int = self.config.get("MAX_PAGE_SIZE", 20)
         self.MAX_INCLUDE_DEPTH: int = self.config.get("MAX_INCLUDE_DEPTH", 3)
         self.headers: HeadersQueryStringManager = HeadersQueryStringManager(**dict(self.request.headers))
         self._validate_query_params()
@@ -208,22 +208,24 @@ class QueryStringManager:
         To allow multiples strategies, all parameters starting with `page` will be included. e.g::
 
             {
-                "number": '25',
-                "size": '150',
+                "number": '1',
+                "size": '20',
             }
 
         Example with number strategy:
 
-            query_string = {'page[number]': '25', 'page[size]': '10'}
+            query_string = {'page[number]': '2', 'page[size]': '20'}
             parsed_query.pagination
-            {'number': '25', 'size': '10'}
+            {'number': '2', 'size': '20'}
 
         :raises BadRequest: if the client is not allowed to disable pagination.
         """
         # check values type
         pagination_data: dict[str, str] = self._get_unique_key_values("page")
         pagination = PaginationQueryStringManager(**pagination_data)
-        if pagination_data.get("size") is None:
+        if pagination_data.get("size") is None and (
+            pagination_data.get("offset") is not None or pagination_data.get("limit") is not None
+        ):
             pagination.size = None
         if pagination.size is not None:
             if pagination.size == 0 and not self.ALLOW_DISABLE_PAGINATION:
