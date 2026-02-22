@@ -282,10 +282,7 @@ class DjangoORMDataLayer(BaseDataLayer):
             )
             if relationship_info is None:
                 raise InvalidInclude(
-                    detail=(
-                        f"Relationship {relationship_name!r} is not available for "
-                        f"resource type {resource_type!r}."
-                    )
+                    detail=(f"Relationship {relationship_name!r} is not available for resource type {resource_type!r}.")
                 )
 
             include_expr_parts.append(relationship_info.model_field_name or relationship_name)
