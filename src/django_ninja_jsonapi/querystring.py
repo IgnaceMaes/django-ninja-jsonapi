@@ -3,6 +3,7 @@
 from collections import defaultdict
 from functools import cached_property
 from typing import Any, Optional, Type
+import re
 from urllib.parse import unquote
 
 import orjson as json
@@ -52,7 +53,8 @@ class HeadersQueryStringManager(BaseModel):
 class QueryStringManager:
     """Querystring parser according to jsonapi reference."""
 
-    managed_keys = ("filter", "page", "fields", "sort", "include", "q")
+    managed_keys = ("filter", "page", "fields", "sort", "include")
+    jsonapi_query_regex = re.compile(r"^(sort|include)$|^(?P<type>filter|fields|page)(\[[\w\.\-]+\])?$")
 
     def __init__(self, request: HttpRequest) -> None:
         """
@@ -67,6 +69,22 @@ class QueryStringManager:
         self.MAX_PAGE_SIZE: int = self.config.get("MAX_PAGE_SIZE", 10000)
         self.MAX_INCLUDE_DEPTH: int = self.config.get("MAX_INCLUDE_DEPTH", 3)
         self.headers: HeadersQueryStringManager = HeadersQueryStringManager(**dict(self.request.headers))
+        self._validate_query_params()
+
+    def _validate_query_params(self):
+        for key in self.qs.keys():
+            match = self.jsonapi_query_regex.match(key)
+            if not match:
+                raise BadRequest(
+                    detail=f"Invalid query parameter: {key}",
+                    parameter=key,
+                )
+
+            if match.group("type") != "filter" and len(self.qs.getlist(key)) > 1:
+                raise BadRequest(
+                    detail=f"Repeated query parameter not allowed: {key}",
+                    parameter=key,
+                )
 
     @classmethod
     def extract_item_key(cls, key: str) -> str:
@@ -131,7 +149,7 @@ class QueryStringManager:
             key: value
             for key, values in self.qs.lists()
             for value in values
-            if key.startswith(self.managed_keys) or self._get_unique_key_values("filter[")
+            if key.startswith(self.managed_keys)
         }
 
     @property

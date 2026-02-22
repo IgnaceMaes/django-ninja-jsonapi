@@ -13,10 +13,12 @@ class ModelsStorage:
     def __init__(self):
         self._models: dict[str, Type[TypeModel]] = {}
         self._id_field_names: dict[str, str] = {}
+        self._resource_paths: dict[str, str] = {}
 
-    def add_model(self, resource_type: str, model: Type[TypeModel], id_field_name: str):
+    def add_model(self, resource_type: str, model: Type[TypeModel], id_field_name: str, resource_path: str):
         self._models[resource_type] = model
         self._id_field_names[resource_type] = id_field_name
+        self._resource_paths[resource_type] = resource_path
 
     def get_model(self, resource_type: str) -> Type[TypeModel]:
         try:
@@ -32,6 +34,14 @@ class ModelsStorage:
         except KeyError as ex:
             raise InternalServerError(
                 detail=f"Not found model id field name for resource_type {resource_type!r}.",
+            ) from ex
+
+    def get_resource_path(self, resource_type: str) -> str:
+        try:
+            return self._resource_paths[resource_type]
+        except KeyError as ex:
+            raise InternalServerError(
+                detail=f"Not found resource path for resource_type {resource_type!r}.",
             ) from ex
 
     def get_object_id_field(self, resource_type: str) -> Any:

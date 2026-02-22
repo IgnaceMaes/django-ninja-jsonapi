@@ -1,7 +1,5 @@
 """
 Base JSON:API schemas.
-
-Pydantic (for FastAPI).
 """
 
 from __future__ import annotations
@@ -37,10 +35,12 @@ class BaseJSONAPIRelationshipSchema(BaseModel):
 
 class BaseJSONAPIRelationshipDataToOneSchema(BaseModel):
     data: BaseJSONAPIRelationshipSchema
+    links: Optional[dict[str, Any]] = None
 
 
 class BaseJSONAPIRelationshipDataToManySchema(BaseModel):
     data: list[BaseJSONAPIRelationshipSchema]
+    links: Optional[dict[str, Any]] = None
 
 
 class BaseJSONAPIItemSchema(BaseModel):
@@ -48,6 +48,7 @@ class BaseJSONAPIItemSchema(BaseModel):
 
     type: str = Field(description="Resource type")
     attributes: dict = Field(description="Resource object attributes")
+    links: Optional[dict[str, Any]] = Field(default=None, description="Resource links")
 
 
 class BaseJSONAPIItemInSchema(BaseJSONAPIItemSchema):
@@ -114,6 +115,7 @@ class BaseJSONAPIResultSchema(BaseModel):
 
     meta: Optional[JSONAPIResultListMetaSchema] = Field(default=None, description="JSON:API metadata")
     jsonapi: JSONAPIDocumentObjectSchema = JSONAPIDocumentObjectSchema()
+    links: Optional[dict[str, Any]] = Field(default=None, description="Top level document links")
 
 
 class JSONAPIResultListSchema(BaseJSONAPIResultSchema):

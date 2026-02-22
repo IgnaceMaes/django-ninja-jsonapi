@@ -3,6 +3,7 @@ import inspect
 import logging
 from functools import partial
 from typing import Any, Callable, ClassVar, Iterable, Optional, Type
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 from django.http import HttpRequest as Request
 from pydantic import BaseModel as PydanticBaseModel
@@ -49,6 +50,7 @@ class ViewBase:
         self.schema: Type[TypeSchema] = schema
         self.options: dict = options
         self.query_params: QueryStringManager = QueryStringManager(request=request)
+        self._api_prefix: Optional[str] = None
 
     async def get_data_layer(
         self,
@@ -254,6 +256,110 @@ class ViewBase:
             (db_items_count % pagination_size) and 1
         )
 
+    @staticmethod
+    def _normalize_path(path: str) -> str:
+        normalized = "/" + path.strip("/")
+        return f"{normalized}/"
+
+    def _get_api_prefix(self) -> str:
+        if self._api_prefix is not None:
+            return self._api_prefix
+
+        resource_path = models_storage.get_resource_path(self.resource_type).rstrip("/")
+        path = self.request.path
+        idx = path.find(resource_path)
+        self._api_prefix = path[:idx] if idx >= 0 else ""
+        return self._api_prefix
+
+    def _build_resource_path(self, resource_type: str, resource_id: Optional[str] = None) -> str:
+        base = self._normalize_path(models_storage.get_resource_path(resource_type))
+        prefix = self._get_api_prefix().rstrip("/")
+        if resource_id is None:
+            return f"{prefix}{base}"
+
+        return f"{prefix}{base}{resource_id}/"
+
+    def _build_relationship_links(self, resource_type: str, resource_id: str, relationship_name: str) -> dict[str, str]:
+        detail_path = self._build_resource_path(resource_type, resource_id)
+        return {
+            "self": self.request.build_absolute_uri(f"{detail_path}relationships/{relationship_name}/"),
+            "related": self.request.build_absolute_uri(f"{detail_path}{relationship_name}/"),
+        }
+
+    @staticmethod
+    def _replace_query_params(url: str, params: dict[str, Optional[int]]) -> str:
+        split = urlsplit(url)
+        query = parse_qs(split.query, keep_blank_values=True)
+        for key, value in params.items():
+            if value is None:
+                query.pop(key, None)
+                continue
+            query[key] = [str(value)]
+
+        encoded = urlencode(query, doseq=True)
+        return urlunsplit((split.scheme, split.netloc, split.path, encoded, split.fragment))
+
+    def _build_pagination_links(self, count: int, total_pages: int) -> dict[str, Optional[str]]:
+        self_url = self.request.build_absolute_uri(self.request.get_full_path())
+        links: dict[str, Optional[str]] = {
+            "self": self_url,
+            "first": None,
+            "last": None,
+            "prev": None,
+            "next": None,
+        }
+
+        if self.query_params.pagination.size:
+            page_size = self.query_params.pagination.size
+            page_number = max(1, self.query_params.pagination.number)
+            last_page = max(1, total_pages)
+
+            links["first"] = self._replace_query_params(self_url, {"page[number]": 1, "page[size]": page_size})
+            links["last"] = self._replace_query_params(
+                self_url,
+                {"page[number]": last_page, "page[size]": page_size},
+            )
+
+            if page_number > 1:
+                links["prev"] = self._replace_query_params(
+                    self_url,
+                    {"page[number]": page_number - 1, "page[size]": page_size},
+                )
+
+            if page_number < last_page:
+                links["next"] = self._replace_query_params(
+                    self_url,
+                    {"page[number]": page_number + 1, "page[size]": page_size},
+                )
+
+            return links
+
+        offset = self.query_params.pagination.offset
+        limit = self.query_params.pagination.limit
+        if offset is None or limit is None:
+            return links
+
+        links["first"] = self._replace_query_params(self_url, {"page[offset]": 0, "page[limit]": limit})
+        last_offset = 0 if count == 0 else ((count - 1) // limit) * limit
+        links["last"] = self._replace_query_params(
+            self_url,
+            {"page[offset]": last_offset, "page[limit]": limit},
+        )
+
+        if offset > 0:
+            links["prev"] = self._replace_query_params(
+                self_url,
+                {"page[offset]": max(0, offset - limit), "page[limit]": limit},
+            )
+
+        if offset + limit < count:
+            links["next"] = self._replace_query_params(
+                self_url,
+                {"page[offset]": offset + limit, "page[limit]": limit},
+            )
+
+        return links
+
     @classmethod
     def _prepare_item_data(
         cls,
@@ -261,14 +367,17 @@ class ViewBase:
         resource_type: str,
         include_fields: Optional[dict[str, dict[str, Type[TypeSchema]]]] = None,
     ) -> dict:
+        object_id = f"{models_storage.get_object_id(db_item, resource_type)}"
         attrs_schema = schemas_storage.get_attrs_schema(resource_type, operation_type="get")
 
         if include_fields is None or not (field_schemas := include_fields.get(resource_type)):
             data_schema = schemas_storage.get_data_schema(resource_type, operation_type="get")
-            return data_schema(
-                id=f"{db_item.id}",
+            result = data_schema(
+                id=object_id,
                 attributes=attrs_schema.model_validate(db_item),
             ).model_dump()
+            result["links"] = {}
+            return result
 
         result_attributes = {}
         # empty str means skip all attributes
@@ -303,9 +412,10 @@ class ViewBase:
                 result_attributes[field_name] = getattr(validated_model, field_name)
 
         return {
-            "id": f"{models_storage.get_object_id(db_item, resource_type)}",
+            "id": object_id,
             "type": resource_type,
             "attributes": result_attributes,
+            "links": {},
         }
 
     def _prepare_include_params(self) -> list[list[str]]:
@@ -339,6 +449,12 @@ class ViewBase:
 
         for db_item, item_data in zip(db_items, items_data, strict=False):
             item_data["relationships"] = item_data.get("relationships", {})
+            item_data.setdefault("links", {})["self"] = self.request.build_absolute_uri(
+                self._build_resource_path(
+                    resource_type=resource_type,
+                    resource_id=str(models_storage.get_object_id(db_item, resource_type)),
+                )
+            )
 
             for path in include_paths:
                 target_relationship, *include_path = path
@@ -412,7 +528,14 @@ class ViewBase:
                         include_fields=include_fields,
                     )
 
-                item_data["relationships"][target_relationship] = {"data": relationship_data}
+                item_data["relationships"][target_relationship] = {
+                    "data": relationship_data,
+                    "links": self._build_relationship_links(
+                        resource_type=resource_type,
+                        resource_id=str(models_storage.get_object_id(db_item, resource_type)),
+                        relationship_name=target_relationship,
+                    ),
+                }
 
         return result_included
 
@@ -446,10 +569,17 @@ class ViewBase:
     def _build_detail_response(self, db_item: TypeModel) -> dict:
         include_fields = self._get_include_fields()
         item_data = self._prepare_item_data(db_item, self.resource_type, include_fields)
+        item_data.setdefault("links", {})["self"] = self.request.build_absolute_uri(
+            self._build_resource_path(
+                resource_type=self.resource_type,
+                resource_id=str(models_storage.get_object_id(db_item, self.resource_type)),
+            )
+        )
         response = {
             "data": item_data,
             "jsonapi": {"version": "1.0"},
             "meta": None,
+            "links": {"self": self.request.build_absolute_uri(self.request.get_full_path())},
         }
 
         if self.query_params.include:
@@ -472,10 +602,18 @@ class ViewBase:
     ) -> dict:
         include_fields = self._get_include_fields()
         items_data = [self._prepare_item_data(db_item, self.resource_type, include_fields) for db_item in items_from_db]
+        for db_item, item_data in zip(items_from_db, items_data, strict=False):
+            item_data.setdefault("links", {})["self"] = self.request.build_absolute_uri(
+                self._build_resource_path(
+                    resource_type=self.resource_type,
+                    resource_id=str(models_storage.get_object_id(db_item, self.resource_type)),
+                )
+            )
         response = {
             "data": items_data,
             "jsonapi": {"version": "1.0"},
             "meta": {"count": count, "totalPages": total_pages},
+            "links": self._build_pagination_links(count=count, total_pages=total_pages),
         }
 
         if self.query_params.include:

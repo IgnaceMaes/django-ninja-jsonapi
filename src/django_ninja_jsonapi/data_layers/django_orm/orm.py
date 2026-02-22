@@ -46,11 +46,17 @@ class DjangoORMDataLayer(BaseDataLayer):
     async def create_object(self, data_create: BaseJSONAPIItemInSchema, view_kwargs: dict):
         await self.before_create_object(data_create, view_kwargs)
 
-        model_kwargs = data_create.attributes.model_dump(exclude_none=True)
+        model_kwargs = data_create.attributes.model_dump(exclude_unset=True)
         model_kwargs = self._apply_client_generated_id(data_create, model_kwargs)
 
         db_object = await sync_to_async(BaseDjangoORM.create, thread_sensitive=True)(self.model, **model_kwargs)
-        await self._apply_relationships(db_object, data_create)
+        atomic_ctx = await self._start_nested_atomic()
+        try:
+            await self._apply_relationships(db_object, data_create)
+        except Exception as ex:
+            await self._end_nested_atomic(atomic_ctx, exception=ex)
+            raise
+        await self._end_nested_atomic(atomic_ctx)
 
         await self.after_create_object(db_object, data_create, view_kwargs)
         return db_object
@@ -173,9 +179,15 @@ class DjangoORMDataLayer(BaseDataLayer):
     async def update_object(self, obj, data_update: BaseJSONAPIItemInSchema, view_kwargs: dict):
         await self.before_update_object(obj, data_update, view_kwargs)
 
-        model_kwargs = data_update.attributes.model_dump(exclude_none=True)
-        await sync_to_async(BaseDjangoORM.update, thread_sensitive=True)(obj, **model_kwargs)
-        await self._apply_relationships(obj, data_update)
+        model_kwargs = data_update.attributes.model_dump(exclude_unset=True)
+        atomic_ctx = await self._start_nested_atomic()
+        try:
+            await sync_to_async(BaseDjangoORM.update, thread_sensitive=True)(obj, **model_kwargs)
+            await self._apply_relationships(obj, data_update)
+        except Exception as ex:
+            await self._end_nested_atomic(atomic_ctx, exception=ex)
+            raise
+        await self._end_nested_atomic(atomic_ctx)
 
         await self.after_update_object(obj, data_update, view_kwargs)
         return obj
@@ -186,8 +198,46 @@ class DjangoORMDataLayer(BaseDataLayer):
         await self.after_delete_object(obj, view_kwargs)
 
     async def delete_objects(self, objects, view_kwargs):
-        for obj in objects:
-            await self.delete_object(obj, view_kwargs)
+        if not objects:
+            return
+
+        if self._has_custom_delete_hooks():
+            for obj in objects:
+                await self.delete_object(obj, view_kwargs)
+            return
+
+        id_field_name = models_storage.get_model_id_field_name(self.resource_type)
+        object_ids = [getattr(obj, id_field_name) for obj in objects]
+        queryset = BaseDjangoORM.queryset(self.model).filter(**{f"{id_field_name}__in": object_ids})
+        await sync_to_async(queryset.delete, thread_sensitive=True)()
+
+    @classmethod
+    def _is_overridden(cls, method_name: str, method) -> bool:
+        method_func = getattr(method, "__func__", method)
+        return method_func is not getattr(cls, method_name)
+
+    def _has_custom_delete_hooks(self) -> bool:
+        return any(
+            [
+                self._is_overridden("before_delete_object", self.before_delete_object),
+                self._is_overridden("after_delete_object", self.after_delete_object),
+            ]
+        )
+
+    async def _start_nested_atomic(self) -> Optional[transaction.Atomic]:
+        if self._atomic_ctx is not None:
+            return None
+
+        atomic_ctx = transaction.atomic()
+        await sync_to_async(atomic_ctx.__enter__, thread_sensitive=True)()
+        return atomic_ctx
+
+    async def _end_nested_atomic(self, atomic_ctx: Optional[transaction.Atomic], exception: Optional[Exception] = None):
+        if atomic_ctx is None:
+            return
+
+        exc_type = type(exception) if exception is not None else None
+        await sync_to_async(atomic_ctx.__exit__, thread_sensitive=True)(exc_type, exception, None)
 
     async def create_relationship(self, json_data, relationship_field, related_id_field, view_kwargs):
         return await self.update_relationship(json_data, relationship_field, related_id_field, view_kwargs)

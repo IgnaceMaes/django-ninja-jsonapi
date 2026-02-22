@@ -71,7 +71,7 @@ class ApplicationBuilder:
                 "The argument 'include_router_kwargs' is not allowed when 'router' is missing"
             )
 
-        models_storage.add_model(resource_type, model, model_id_field_name)
+        models_storage.add_model(resource_type, model, model_id_field_name, path)
         views_storage.add_view(resource_type, view)
 
         dto = SchemaBuilder(resource_type).create_schemas(

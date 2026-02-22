@@ -10,7 +10,11 @@ from django_ninja_jsonapi.storages.views_storage import views_storage
 
 @pytest.fixture(autouse=True)
 def reset_global_storages():
-    models_snapshot = (copy.copy(models_storage._models), copy.copy(models_storage._id_field_names))
+    models_snapshot = (
+        copy.copy(models_storage._models),
+        copy.copy(models_storage._id_field_names),
+        copy.copy(models_storage._resource_paths),
+    )
     schemas_snapshot = (
         copy.deepcopy(schemas_storage._data),
         copy.copy(schemas_storage._source_schemas),
@@ -23,6 +27,7 @@ def reset_global_storages():
 
     models_storage._models = models_snapshot[0]
     models_storage._id_field_names = models_snapshot[1]
+    models_storage._resource_paths = models_snapshot[2]
 
     schemas_storage._data = schemas_snapshot[0]
     schemas_storage._source_schemas = schemas_snapshot[1]
