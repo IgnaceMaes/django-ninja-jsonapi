@@ -5,7 +5,7 @@ The project uses `pytest` with `pytest-django`.
 ## Run all tests
 
 ```bash
-uv run pytest
+uv run pytest --cov=src/django_ninja_jsonapi --cov-report=term-missing
 ```
 
 ## Current coverage areas
@@ -20,3 +20,7 @@ uv run pytest
 - Prefer small focused unit tests for parsing/translation logic.
 - Add integration tests when route behavior changes.
 - Keep test settings in `tests/settings.py`.
+
+## CI behavior
+
+In CI, tests run with coverage reporting enabled and a minimum threshold enforced from `pyproject.toml`.

@@ -7,3 +7,6 @@
 - [Development](development.md)
 - [Testing](testing.md)
 - [Limitations & Roadmap](limitations.md)
+- [Contributing](../CONTRIBUTING.md)
+- [Security](../SECURITY.md)
+- [Changelog](../CHANGELOG.md)

@@ -10,6 +10,9 @@ This documentation covers setup, usage, configuration, and development for `djan
 - [Development](development.md)
 - [Testing](testing.md)
 - [Limitations & Roadmap](limitations.md)
+- [Contributing](../CONTRIBUTING.md)
+- [Security](../SECURITY.md)
+- [Changelog](../CHANGELOG.md)
 
 ## What this package provides
 

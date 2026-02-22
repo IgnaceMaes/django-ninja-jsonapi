@@ -12,7 +12,7 @@
 uv sync
 uv run ruff format src tests
 uv run ruff check src tests
-uv run pytest
+uv run pytest --cov=src/django_ninja_jsonapi --cov-report=term-missing
 ```
 
 ## Project layout
@@ -27,3 +27,11 @@ uv run pytest
 2. Add tests for behavior changes.
 3. Run lint and tests.
 4. Update docs if API/behavior changed.
+
+## CI
+
+GitHub Actions workflows run on pull requests and pushes to `main`:
+
+- lint + format check
+- pytest with coverage threshold
+- package build validation

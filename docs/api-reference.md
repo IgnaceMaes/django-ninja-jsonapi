@@ -3,7 +3,7 @@
 ## Public imports
 
 ```python
-from django_ninja_jsonapi import ApplicationBuilder, QueryStringManager, HTTPException, BadRequest
+from django_ninja_jsonapi import ApplicationBuilder, QueryStringManager, HTTPException, BadRequest, ViewBaseGeneric
 ```
 
 ## `ApplicationBuilder`

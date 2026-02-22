@@ -24,7 +24,7 @@ class UserSchema(BaseModel):
 ## 3) Define view class
 
 ```python
-from django_ninja_jsonapi.generics import ViewBaseGeneric
+from django_ninja_jsonapi import ViewBaseGeneric
 
 
 class UserView(ViewBaseGeneric):

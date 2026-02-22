@@ -2,6 +2,9 @@
 
 JSON:API toolkit for Django Ninja.
 
+[![CI](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/ci.yml/badge.svg)](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/ci.yml)
+[![Package](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/package.yml/badge.svg)](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/package.yml)
+
 This project ports the core ideas of `fastapi-jsonapi` to a Django Ninja + Django ORM stack.
 
 Full documentation is available in [docs/index.md](docs/index.md).
@@ -46,7 +49,7 @@ class UserSchema(BaseModel):
 ### 2) Create a JSON:API view class
 
 ```python
-from django_ninja_jsonapi.generics import ViewBaseGeneric
+from django_ninja_jsonapi import ViewBaseGeneric
 
 
 class UserView(ViewBaseGeneric):
@@ -101,7 +104,7 @@ JSONAPI = {
 ## Exported public API
 
 ```python
-from django_ninja_jsonapi import ApplicationBuilder, QueryStringManager, HTTPException, BadRequest
+from django_ninja_jsonapi import ApplicationBuilder, QueryStringManager, HTTPException, BadRequest, ViewBaseGeneric
 ```
 
 ## Development
@@ -109,8 +112,10 @@ from django_ninja_jsonapi import ApplicationBuilder, QueryStringManager, HTTPExc
 ```bash
 uv run ruff format src tests
 uv run ruff check src tests
-uv run pytest
+uv run pytest --cov=src/django_ninja_jsonapi --cov-report=term-missing
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution workflow.
 
 ## Test coverage
 
@@ -125,3 +130,4 @@ Current tests cover:
 
 - This project is Django Ninja + Django ORM focused.
 - SQLAlchemy-specific modules have been removed to keep the codebase simpler and consistent.
+- CI runs on pull requests and pushes to `main`.
