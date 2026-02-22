@@ -1,9 +1,9 @@
 """Helper to deal with querystring parameters according to jsonapi specification."""
 
+import re
 from collections import defaultdict
 from functools import cached_property
 from typing import Any, Optional, Type
-import re
 from urllib.parse import unquote
 
 import orjson as json
@@ -145,12 +145,7 @@ class QueryStringManager:
 
         :return: dict of managed querystring parameter
         """
-        return {
-            key: value
-            for key, values in self.qs.lists()
-            for value in values
-            if key.startswith(self.managed_keys)
-        }
+        return {key: value for key, values in self.qs.lists() for value in values if key.startswith(self.managed_keys)}
 
     @property
     def filters(self) -> list[dict]:
