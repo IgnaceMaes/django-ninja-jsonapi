@@ -16,6 +16,49 @@ Default route:
 POST /operations
 ```
 
+## Request example (mixed actions)
+
+```http
+POST /operations
+Content-Type: application/json
+
+{
+	"atomic:operations": [
+		{
+			"op": "add",
+			"data": {
+				"type": "user",
+				"lid": "user-1",
+				"attributes": {"name": "John", "email": "john@example.com"}
+			}
+		},
+		{
+			"op": "add",
+			"data": {
+				"type": "computer",
+				"attributes": {"serial": "ABC-123"},
+				"relationships": {
+					"owner": {
+						"data": {"type": "user", "lid": "user-1"}
+					}
+				}
+			}
+		}
+	]
+}
+```
+
+## Response example
+
+```json
+{
+	"atomic:results": [
+		{"data": {"type": "user", "id": "1"}},
+		{"data": {"type": "computer", "id": "10"}}
+	]
+}
+```
+
 ## Behavior
 
 - Operations run in order.

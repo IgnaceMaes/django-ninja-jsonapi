@@ -2,10 +2,16 @@
 
 Filtering uses the `filter` query parameter and is translated by the data layer.
 
-## Full JSON filter format
+## Full JSON filter format (single condition)
 
 ```http
 GET /users?filter=[{"name":"name","op":"eq","val":"John"}]
+```
+
+## Full JSON filter format (multiple conditions)
+
+```http
+GET /users?filter=[{"name":"status","op":"eq","val":"active"},{"name":"age","op":"ge","val":18}]
 ```
 
 ## Simple filters
@@ -17,9 +23,36 @@ GET /users?filter[name]=John&filter[status]=active
 
 Simple filters are treated as `eq` comparisons.
 
+## Relationship-path filters
+
+```http
+GET /users?filter[computers.serial]=ABC-123
+GET /computers?filter[owner.id]=1
+```
+
+## Common operators (Django ORM mapping)
+
+- `eq`, `ne`
+- `lt`, `le`, `gt`, `ge`
+- `in`, `not_in`
+- `like`, `ilike`
+- `is_null`
+
 ## Logical combinations
 
-You can send full filter objects for complex expressions (`and`, `or`, `not`) when your data layer supports them.
+You can send full filter objects for complex expressions when your data-layer implementation supports nested logic translation.
+
+```json
+[
+	{"name":"status","op":"eq","val":"active"},
+	{
+		"or": [
+			{"name":"age","op":"gt","val":30},
+			{"name":"role","op":"eq","val":"admin"}
+		]
+	}
+]
+```
 
 ## Notes
 

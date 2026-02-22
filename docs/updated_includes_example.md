@@ -4,12 +4,39 @@ This example combines relationship updates with `include` to return expanded pay
 
 ## Example flow
 
-1. Update resource attributes and relationships.
-2. Request related resources using `include`.
-3. Receive primary `data` plus `included` resources.
+1. Update user attributes and relationships.
+2. Pass `include=computers` to receive updated related resources immediately.
+3. Read both `data` and `included` in one round-trip.
 
 ```http
 PATCH /users/1?include=computers
+Content-Type: application/json
+
+{
+	"data": {
+		"type": "user",
+		"id": "1",
+		"attributes": {
+			"name": "John Updated"
+		},
+		"relationships": {
+			"computers": {
+				"data": [{"type": "computer", "id": "10"}]
+			}
+		}
+	}
+}
+```
+
+Example response excerpt:
+
+```json
+{
+	"data": {"type": "user", "id": "1"},
+	"included": [
+		{"type": "computer", "id": "10", "attributes": {"serial": "ABC-123"}}
+	]
+}
 ```
 
 Use this pattern when clients need immediate post-update relationship context.

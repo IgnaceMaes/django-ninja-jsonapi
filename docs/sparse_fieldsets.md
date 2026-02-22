@@ -16,4 +16,23 @@ GET /users/1?include=computers&fields[computer]=serial
 GET /users/1?include=computers&fields[user]=name,computers&fields[computer]=serial
 ```
 
+Example effect:
+
+```json
+{
+	"data": {
+		"type": "user",
+		"id": "1",
+		"attributes": {"name": "John"}
+	},
+	"included": [
+		{
+			"type": "computer",
+			"id": "10",
+			"attributes": {"serial": "ABC-123"}
+		}
+	]
+}
+```
+
 When combining `include` with `fields`, keep included relationships in the parent resource fieldset.

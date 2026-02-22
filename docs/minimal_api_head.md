@@ -2,6 +2,8 @@
 
 This is the smallest possible setup to register one JSON:API-style resource on Django Ninja.
 
+Use this when you want a quick baseline before adding relationships, filters, and atomic operations.
+
 ```python
 from ninja import NinjaAPI
 from pydantic import BaseModel
@@ -33,4 +35,12 @@ builder.add_resource(
     schema=UserSchema,
 )
 builder.initialize()
+```
+
+Then mount with:
+
+```python
+urlpatterns = [
+    path("api/", api.urls),
+]
 ```
