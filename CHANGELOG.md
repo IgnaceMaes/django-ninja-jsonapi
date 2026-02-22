@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.0](https://github.com/IgnaceMaes/django-ninja-jsonapi/compare/v0.2.0...v0.3.0) (2026-02-22)
+
+
+### Features
+
+* django-filter, resource meta, cleanup ([1c77d62](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/1c77d626b146dcc32e114f46f1f42e9e0dac788b))
+
+
+### Bug Fixes
+
+* lint ([3d18479](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/3d184791259adf803180ee3d815cc09352e48daf))
+* relationships ([d52dc1b](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/d52dc1b17a7ee29ca3403da878e513edc32eb10f))
+
+
+### Documentation
+
+* link to ([9fb7087](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/9fb70871617820c297764494392ef04f301d4ebe))
+
 ## [0.2.0](https://github.com/IgnaceMaes/django-ninja-jsonapi/compare/v0.1.0...v0.2.0) (2026-02-22)
 
 
