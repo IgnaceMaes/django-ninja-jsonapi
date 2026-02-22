@@ -1,3 +1,5 @@
+from typing import Annotated
+
 import pytest
 from ninja import NinjaAPI
 from pydantic import BaseModel
@@ -5,6 +7,7 @@ from pydantic import BaseModel
 from django_ninja_jsonapi.api.application_builder import ApplicationBuilder, ApplicationBuilderError
 from django_ninja_jsonapi.generics import ViewBaseGeneric
 from django_ninja_jsonapi.renderers import JSONAPI_MEDIA_TYPE
+from django_ninja_jsonapi.types_metadata import RelationshipInfo
 from django_ninja_jsonapi.views.enums import Operation
 
 
@@ -123,3 +126,37 @@ def test_relationship_path_builder_shape():
 
 def test_simplified_generics_import_path_exposes_view_base_generic():
     assert ViewBaseGeneric.__name__ == "ViewBaseGeneric"
+
+
+def test_builder_initializes_resources_with_included_relationship_schemas():
+    class ComputerSchema(BaseModel):
+        id: int
+        serial: str
+
+    class CustomerSchema(BaseModel):
+        id: int
+        name: str
+        computers: Annotated[list[ComputerSchema], RelationshipInfo(resource_type="computer", many=True)] = []
+
+    api = NinjaAPI()
+    builder = ApplicationBuilder(api)
+
+    builder.add_resource(
+        path="/customers",
+        tags=["customers"],
+        resource_type="customer",
+        view=DummyView,
+        model=DummyModel,
+        schema=CustomerSchema,
+    )
+    builder.add_resource(
+        path="/computers",
+        tags=["computers"],
+        resource_type="computer",
+        view=DummyView,
+        model=DummyModel,
+        schema=ComputerSchema,
+    )
+
+    initialized = builder.initialize()
+    assert initialized is api

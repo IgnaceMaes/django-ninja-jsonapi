@@ -10,7 +10,7 @@ from pydantic import BaseModel as PydanticBaseModel
 from django_ninja_jsonapi.common import get_relationship_info_from_field_metadata
 from django_ninja_jsonapi.data_layers.base import BaseDataLayer
 from django_ninja_jsonapi.data_typing import TypeModel, TypeSchema
-from django_ninja_jsonapi.exceptions import BadRequest
+from django_ninja_jsonapi.exceptions import BadRequest, InvalidInclude
 from django_ninja_jsonapi.querystring import QueryStringManager
 from django_ninja_jsonapi.schema import BaseJSONAPIItemInSchema
 from django_ninja_jsonapi.schema_base import BaseModel
@@ -347,13 +347,23 @@ class ViewBase:
                     operation_type="get",
                     field_name=target_relationship,
                 )
+                if info is None:
+                    raise InvalidInclude(
+                        detail=(
+                            f"Relationship {target_relationship!r} is not available for "
+                            f"resource type {resource_type!r}."
+                        )
+                    )
                 db_items_to_process: list[TypeModel] = []
                 items_data_to_process: list[dict] = []
 
                 if info.many:
                     relationship_data = []
+                    relationship_db_items = getattr(db_item, target_relationship)
+                    if hasattr(relationship_db_items, "all") and callable(relationship_db_items.all):
+                        relationship_db_items = relationship_db_items.all()
 
-                    for relationship_db_item in getattr(db_item, target_relationship):
+                    for relationship_db_item in relationship_db_items:
                         include_key = self._get_include_key(relationship_db_item, info)
 
                         if not (relationship_item_data := result_included.get(include_key)):

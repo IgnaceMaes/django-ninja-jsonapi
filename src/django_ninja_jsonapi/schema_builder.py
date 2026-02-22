@@ -453,7 +453,7 @@ class SchemaBuilder:
 
         schemas_storage.add_resource(
             builder=self,
-            resource_type=self._resource_type,
+            resource_type=resource_type,
             operation_type="get",
             source_schema=schema,
             data_schema=relationship_less_object_jsonapi_schema,
