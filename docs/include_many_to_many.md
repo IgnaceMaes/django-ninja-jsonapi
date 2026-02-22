@@ -22,3 +22,5 @@ GET /groups/1/relationships/customers
 ```
 
 Use relationship-link endpoints for linkage-only payloads, and `include` for full related resource payloads.
+
+Included resource responses now also expose `links.self` on each included object.

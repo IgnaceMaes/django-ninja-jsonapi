@@ -180,3 +180,9 @@ Content-Type: application/json
 ```
 
 Relationship and relationship-link routes are generated when schema relationship metadata is available.
+
+## Response and query notes
+
+- Responses include top-level `links` and resource-level `links.self`.
+- Relationship payloads include `links.self` and `links.related`.
+- Unknown query parameters return `400 Bad Request`.

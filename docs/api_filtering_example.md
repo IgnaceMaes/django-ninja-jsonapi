@@ -51,6 +51,9 @@ print(response.json())
 
 ```json
 {
+	"links": {
+		"self": "http://localhost:8000/api/customers?filter%5Bstatus%5D=active&sort=-created_at&page%5Bsize%5D=20&page%5Bnumber%5D=1"
+	},
 	"data": [
 		{
 			"type": "customer",
@@ -58,6 +61,9 @@ print(response.json())
 			"attributes": {
 				"name": "John",
 				"status": "active"
+			},
+			"links": {
+				"self": "http://localhost:8000/api/customers/1/"
 			}
 		}
 	]

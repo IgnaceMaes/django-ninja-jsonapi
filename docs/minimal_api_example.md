@@ -74,3 +74,5 @@ Content-Type: application/json
     }
 }
 ```
+
+List/detail responses include top-level `links` and each resource includes `links.self`.

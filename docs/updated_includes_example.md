@@ -52,9 +52,19 @@ Example response excerpt:
 
 ```json
 {
-	"data": {"type": "customer", "id": "1"},
+	"links": {"self": "http://localhost:8000/api/customers/1?include=computers"},
+	"data": {
+		"type": "customer",
+		"id": "1",
+		"links": {"self": "http://localhost:8000/api/customers/1/"}
+	},
 	"included": [
-		{"type": "computer", "id": "10", "attributes": {"serial": "ABC-123"}}
+		{
+			"type": "computer",
+			"id": "10",
+			"attributes": {"serial": "ABC-123"},
+			"links": {"self": "http://localhost:8000/api/computers/10/"}
+		}
 	]
 }
 ```
