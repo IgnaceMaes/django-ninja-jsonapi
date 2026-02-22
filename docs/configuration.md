@@ -6,17 +6,25 @@
 
 ```python
 JSONAPI = {
-    "MAX_INCLUDE_DEPTH": 3,
+    "PAGE_SIZE": 30,
     "MAX_PAGE_SIZE": 100,
+    "MAX_INCLUDE_DEPTH": 3,
     "ALLOW_DISABLE_PAGINATION": True,
 }
 ```
 
-## Meaning
+## Keys
 
-- `MAX_INCLUDE_DEPTH`: max allowed nesting for `include` paths.
-- `MAX_PAGE_SIZE`: cap for `page[size]`.
-- `ALLOW_DISABLE_PAGINATION`: allows `page[size]=0` semantics.
+- `PAGE_SIZE`: default page size when pagination is not explicitly provided.
+- `MAX_PAGE_SIZE`: hard upper limit for `page[size]`.
+- `MAX_INCLUDE_DEPTH`: maximum include chain depth (for example `a.b.c`).
+- `ALLOW_DISABLE_PAGINATION`: allows/disallows `page[size]=0`.
+
+## Practical guidance
+
+- Keep `MAX_INCLUDE_DEPTH` conservative to avoid expensive graph traversal.
+- Set `MAX_PAGE_SIZE` based on endpoint cost and typical client use.
+- Use per-resource operation limits when read-heavy resources need stricter controls.
 
 ## Query parameters supported
 

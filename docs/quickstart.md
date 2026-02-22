@@ -1,6 +1,8 @@
 # Quickstart
 
-## 1) Install dependencies
+This guide walks through a full resource setup and the generated JSON:API-style endpoints.
+
+## 1) Install
 
 ```bash
 uv sync
@@ -15,13 +17,15 @@ from pydantic import BaseModel
 
 class User(models.Model):
     name = models.CharField(max_length=128)
+    email = models.EmailField()
 
 
 class UserSchema(BaseModel):
     name: str
+    email: str
 ```
 
-## 3) Define view class
+## 3) Define view
 
 ```python
 from django_ninja_jsonapi import ViewBaseGeneric
@@ -31,11 +35,10 @@ class UserView(ViewBaseGeneric):
     pass
 ```
 
-## 4) Register resource routes
+## 4) Register resource
 
 ```python
 from ninja import NinjaAPI
-
 from django_ninja_jsonapi import ApplicationBuilder
 
 api = NinjaAPI()
@@ -53,21 +56,27 @@ builder.add_resource(
 builder.initialize()
 ```
 
-## 5) Mount API in Django URLconf
+## 5) Mount URLs
 
 ```python
 from django.urls import path
 from .api import api
 
-urlpatterns = [
-    path("api/", api.urls),
-]
+urlpatterns = [path("api/", api.urls)]
 ```
 
-## 6) Run
+## 6) Run and call endpoints
 
 ```bash
 uv run python manage.py runserver
 ```
 
-Open Django Ninja docs at `/api/docs`.
+Common generated routes:
+
+- `GET /api/users`
+- `POST /api/users`
+- `GET /api/users/{id}`
+- `PATCH /api/users/{id}`
+- `DELETE /api/users/{id}`
+
+Relationship and relationship-link routes are generated when schema relationship metadata is available.

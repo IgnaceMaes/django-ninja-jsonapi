@@ -1,0 +1,29 @@
+# Pagination
+
+Pagination uses the `page` query namespace.
+
+## Page size
+
+```http
+GET /users?page[size]=10
+```
+
+## Page number
+
+```http
+GET /users?page[number]=2
+```
+
+## Combined
+
+```http
+GET /users?page[size]=10&page[number]=2
+```
+
+## Disable pagination
+
+Depending on configuration, pagination can be disabled with:
+
+```http
+GET /users?page[size]=0
+```
