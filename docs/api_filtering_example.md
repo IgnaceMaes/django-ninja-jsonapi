@@ -32,6 +32,21 @@ GET /computers?filter[owner.email]=john@example.com
 GET /users?filter[status]=active&sort=-created_at&page[size]=20&page[number]=1
 ```
 
+```python
+import httpx
+
+response = httpx.get(
+	"http://localhost:8000/api/users",
+	params={
+		"filter[status]": "active",
+		"sort": "-created_at",
+		"page[size]": 20,
+		"page[number]": 1,
+	},
+)
+print(response.json())
+```
+
 ## Response excerpt
 
 ```json

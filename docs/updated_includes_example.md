@@ -28,6 +28,26 @@ Content-Type: application/json
 }
 ```
 
+```python
+import httpx
+
+payload = {
+	"data": {
+		"type": "user",
+		"id": "1",
+		"attributes": {"name": "John Updated"},
+		"relationships": {
+			"computers": {
+				"data": [{"type": "computer", "id": "10"}],
+			},
+		},
+	},
+}
+
+response = httpx.patch("http://localhost:8000/api/users/1?include=computers", json=payload)
+print(response.json())
+```
+
 Example response excerpt:
 
 ```json
