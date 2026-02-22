@@ -13,6 +13,14 @@ class Command(BaseCommand):
             {"name": "Charlie Brown", "email": "charlie@example.com"},
         ]
 
+        for i in range(1, 31):
+            customers_data.append(
+                {
+                    "name": f"Demo Customer {i:02d}",
+                    "email": f"demo-customer-{i:02d}@example.com",
+                }
+            )
+
         created_customers = []
         for data in customers_data:
             customer, created = Customer.objects.get_or_create(
@@ -31,6 +39,15 @@ class Command(BaseCommand):
             {"serial": "NUC-900", "owner": created_customers[2]},
             {"serial": "LAB-777", "owner": None},
         ]
+
+        for i in range(1, 76):
+            owner = None if i % 7 == 0 else created_customers[(i - 1) % len(created_customers)]
+            computers_data.append(
+                {
+                    "serial": f"DEMO-{i:04d}",
+                    "owner": owner,
+                }
+            )
 
         for data in computers_data:
             Computer.objects.update_or_create(

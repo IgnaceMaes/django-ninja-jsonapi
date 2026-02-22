@@ -73,3 +73,9 @@ List customers:
 ```http
 GET /api/customers
 ```
+
+Paginated customers:
+
+```http
+GET /api/customers?page[size]=10&page[number]=2
+```
