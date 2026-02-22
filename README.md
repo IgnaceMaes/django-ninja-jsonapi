@@ -12,10 +12,11 @@ Full documentation is available in [docs/index.md](docs/index.md).
 ## Status
 
 - Working baseline for resource registration and route generation (`GET`, `GET LIST`, `POST`, `PATCH`, `DELETE`).
-- Query parsing for JSON:API-style `filter`, `sort`, `include`, `fields`, and `page` parameters.
+- Strict query parsing for JSON:API-style `filter`, `sort`, `include`, `fields`, and `page` parameters.
 - JSON:API exception payload handling.
 - Atomic operations endpoint wiring (`/operations`).
 - Django ORM data-layer baseline for CRUD + basic relationship handling.
+- Top-level/resource/relationship `links` in responses.
 
 ## Requirements
 

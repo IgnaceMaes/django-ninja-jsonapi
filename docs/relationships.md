@@ -64,3 +64,21 @@ Content-Type: application/json
 	]
 }
 ```
+
+## Response links
+
+Relationship payloads include JSON:API links:
+
+```json
+{
+	"data": [
+		{"type": "computer", "id": "10"}
+	],
+	"links": {
+		"self": "http://localhost:8000/api/customers/1/relationships/computers/",
+		"related": "http://localhost:8000/api/customers/1/computers/"
+	}
+}
+```
+
+Resource objects also include `links.self` in list/detail responses.

@@ -36,6 +36,13 @@ Typical list response contains pagination metadata:
 ```json
 {
 	"data": [...],
+	"links": {
+		"self": "http://localhost:8000/api/customers?page%5Bsize%5D=10&page%5Bnumber%5D=2",
+		"first": "http://localhost:8000/api/customers?page%5Bnumber%5D=1&page%5Bsize%5D=10",
+		"last": "http://localhost:8000/api/customers?page%5Bnumber%5D=4&page%5Bsize%5D=10",
+		"prev": "http://localhost:8000/api/customers?page%5Bnumber%5D=1&page%5Bsize%5D=10",
+		"next": "http://localhost:8000/api/customers?page%5Bnumber%5D=3&page%5Bsize%5D=10"
+	},
 	"meta": {
 		"count": 10,
 		"totalPages": 4

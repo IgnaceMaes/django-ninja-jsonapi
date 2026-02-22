@@ -22,15 +22,16 @@ class CustomerView(ViewBase):
 {
   "errors": [
     {
-      "status": "400",
+      "status_code": 400,
       "source": {"parameter": "include"},
-      "title": "BadRequest",
-      "detail": "Include parameter is invalid"
+      "title": "Bad Request",
+      "detail": "Invalid query parameter: includez"
     }
-  ],
-  "jsonapi": {"version": "1.0"}
+  ]
 }
 ```
+
+For strict query validation, unknown parameters and repeated non-filter parameters now return `400`.
 
 ## Example (resource validation error)
 

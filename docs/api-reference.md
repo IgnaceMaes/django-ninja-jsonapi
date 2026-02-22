@@ -55,6 +55,18 @@ Generated endpoints include:
 - relationship list/detail GET endpoints (when relationship metadata is available)
 - atomic endpoint: `POST /operations`
 
+### Response shape notes
+
+- List/detail responses include top-level `links`.
+- Resource objects include `links.self`.
+- Relationship objects include `links.self` and `links.related`.
+
+### Query parameter validation
+
+- Allowed top-level query params: `filter`, `sort`, `include`, `fields[...]`, `page[...]`.
+- Unknown params return `400`.
+- Repeating non-filter params returns `400`.
+
 ## `Operation` enum
 
 Location: `django_ninja_jsonapi.views.enums.Operation`

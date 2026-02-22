@@ -1,12 +1,11 @@
 # Configuration
 
-`QueryStringManager` reads JSON:API settings from Django settings under `JSONAPI`.
+`QueryStringManager` reads settings from Django `NINJA_JSONAPI`.
 
 ## Settings
 
 ```python
-JSONAPI = {
-    "PAGE_SIZE": 30,
+NINJA_JSONAPI = {
     "MAX_PAGE_SIZE": 100,
     "MAX_INCLUDE_DEPTH": 3,
     "ALLOW_DISABLE_PAGINATION": True,
@@ -15,7 +14,6 @@ JSONAPI = {
 
 ## Keys
 
-- `PAGE_SIZE`: default page size when pagination is not explicitly provided.
 - `MAX_PAGE_SIZE`: hard upper limit for `page[size]`.
 - `MAX_INCLUDE_DEPTH`: maximum include chain depth (for example `a.b.c`).
 - `ALLOW_DISABLE_PAGINATION`: allows/disallows `page[size]=0`.
@@ -34,3 +32,9 @@ JSONAPI = {
 - `include`
 - `fields[resource_type]`
 - `page[number]`, `page[size]`, `page[offset]`, `page[limit]`
+
+## Query parameter validation
+
+- Unknown query parameters are rejected with `400 Bad Request`.
+- Repeated parameters are rejected for non-`filter` keys (for example repeating `sort` or `page[size]`).
+- Repeating `filter[...]` keys is allowed.

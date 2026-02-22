@@ -53,19 +53,8 @@ GET /computers?filter[owner.id]=1
 
 ## Logical combinations
 
-You can send full filter objects for complex expressions when your data-layer implementation supports nested logic translation.
-
-```json
-[
-	{"name":"status","op":"eq","val":"active"},
-	{
-		"or": [
-			{"name":"age","op":"gt","val":30},
-			{"name":"role","op":"eq","val":"admin"}
-		]
-	}
-]
-```
+Logical OR/AND/NOT filter trees are not supported yet in the built-in Django ORM data layer.
+Multiple filters are applied as AND conditions.
 
 ## Notes
 
