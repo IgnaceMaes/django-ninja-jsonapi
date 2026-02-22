@@ -281,8 +281,7 @@ class ViewBase:
                 if info is None:
                     raise InvalidInclude(
                         detail=(
-                            f"Relationship {relationship_name!r} is not available for "
-                            f"resource type {resource_type!r}."
+                            f"Relationship {relationship_name!r} is not available for resource type {resource_type!r}."
                         )
                     )
 
