@@ -16,37 +16,34 @@
 - JSON:API error envelopes
 - Atomic operations endpoint wiring (`/operations`)
 
-## User guide
+## Documentation
 
+### Getting started
+
+- [Getting started](getting-started.md)
 - [Installation](installation.md)
+- [Quickstart](quickstart.md)
+
+### Usage
+
+- [Usage overview](usage.md)
+- [Routing](routing.md)
+- [Configuration](configuration.md)
+- [Relationships](relationships.md)
+- [Filtering](filtering.md)
+- [Sorting](sorting.md)
+- [Pagination](pagination.md)
+- [Errors](errors.md)
+
+### Examples
+
+- [Examples overview](examples.md)
 - [Minimal API (head)](minimal_api_head.md)
 - [Minimal API example](minimal_api_example.md)
 - [API filtering example](api_filtering_example.md)
 - [Limited methods example](api_limited_methods_example.md)
-- [Quickstart](quickstart.md)
-- [Routing](routing.md)
-- [Atomic operations](atomic_operations.md)
-- [View dependencies](view_dependencies.md)
-- [Filtering](filtering.md)
-- [Updated includes example](updated_includes_example.md)
-- [Include related objects](include_related_objects.md)
-- [Include many-to-many](include_many_to_many.md)
-- [Custom filtering](custom_sql_filtering.md)
-- [Client-generated ID](client_generated_id.md)
-- [Logical data abstraction](logical_data_abstraction.md)
-- [Data layer](data_layer.md)
-- [Relationships](relationships.md)
-- [Configuration](configuration.md)
-- [Sparse fieldsets](sparse_fieldsets.md)
-- [Pagination](pagination.md)
-- [Sorting](sorting.md)
-- [Errors](errors.md)
-- [Permission](permission.md)
-- [OAuth](oauth.md)
-- [fastapi-jsonapi topic alias](fastapi-jsonapi.md)
-- [django-ninja-jsonapi package](django-ninja-jsonapi.md)
 
-## Project docs
+### Reference and project
 
 - [API reference](api-reference.md)
 - [Development](development.md)
