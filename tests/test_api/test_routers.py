@@ -161,9 +161,7 @@ def test_relationship_endpoint_uses_related_resource_builder_context():
     assert relationship_op is not None
     closure = getattr(relationship_op.view_func, "__closure__", ()) or ()
     captured_resource_types = [
-        cell.cell_contents.resource_type
-        for cell in closure
-        if hasattr(cell.cell_contents, "resource_type")
+        cell.cell_contents.resource_type for cell in closure if hasattr(cell.cell_contents, "resource_type")
     ]
 
     assert "computer" in captured_resource_types
