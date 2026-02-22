@@ -5,7 +5,13 @@ This guide shows a complete Django Ninja setup with two related resources (`cust
 ## 1) Install
 
 ```bash
-uv sync
+uv add django-ninja-jsonapi
+```
+
+Or install with pip:
+
+```bash
+pip install django-ninja-jsonapi
 ```
 
 ## 2) Define models

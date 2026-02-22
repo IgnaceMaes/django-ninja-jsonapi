@@ -1,5 +1,13 @@
 # Development
 
+## Clone and setup
+
+```bash
+git clone https://github.com/IgnaceMaes/django-ninja-jsonapi.git
+cd django-ninja-jsonapi
+uv sync --dev
+```
+
 ## Tooling
 
 - Package/environment manager: `uv`
