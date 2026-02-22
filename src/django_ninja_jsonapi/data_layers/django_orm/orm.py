@@ -22,6 +22,7 @@ class DjangoORMDataLayer(BaseDataLayer):
     def __init__(self, *args, **kwargs):
         self.select_for_includes: dict[str, list[str]] = kwargs.pop("select_for_includes", {})
         self.prefetch_for_includes: dict[str, list[str]] = kwargs.pop("prefetch_for_includes", {})
+        self.django_filterset_class = kwargs.pop("django_filterset_class", None)
         super().__init__(*args, **kwargs)
         self._atomic_ctx: Optional[transaction.Atomic] = None
 
@@ -321,6 +322,7 @@ class DjangoORMDataLayer(BaseDataLayer):
         return await sync_to_async(list, thread_sensitive=True)(queryset)
 
     def _apply_querystring(self, queryset, qs: QueryStringManager):
+        queryset = self._apply_django_filterset(queryset)
         queryset = apply_filters(queryset, qs.filters)
         queryset = apply_sorts(queryset, qs.sorts)
 
@@ -335,6 +337,32 @@ class DjangoORMDataLayer(BaseDataLayer):
             queryset = queryset.only(models_storage.get_model_id_field_name(self.resource_type), *fields)
 
         return queryset
+
+    def _apply_django_filterset(self, queryset):
+        if self.django_filterset_class is None:
+            return queryset
+
+        try:
+            filterset = self.django_filterset_class(
+                data=self.request.GET,
+                queryset=queryset,
+                request=self.request,
+            )
+        except TypeError:
+            filterset = self.django_filterset_class(
+                data=self.request.GET,
+                queryset=queryset,
+            )
+
+        if hasattr(filterset, "is_valid") and callable(filterset.is_valid) and not filterset.is_valid():
+            from django_ninja_jsonapi.exceptions import BadRequest
+
+            raise BadRequest(
+                detail="Invalid django-filter query parameters",
+                meta={"errors": getattr(filterset, "errors", {})},
+            )
+
+        return filterset.qs
 
     def _map_include_path_to_prefetch(self, include_path: str) -> str:
         resource_type = self.resource_type

@@ -107,8 +107,15 @@ NINJA_JSONAPI = {
     "MAX_INCLUDE_DEPTH": 3,
     "MAX_PAGE_SIZE": 100,
     "ALLOW_DISABLE_PAGINATION": True,
+    "INCLUDE_JSONAPI_OBJECT": False,
+    "JSONAPI_VERSION": "1.0",
 }
 ```
+
+Additional view/schema options:
+
+- `django_filterset_class` on a `ViewBaseGeneric` subclass to enable optional django-filter integration.
+- `JSONAPIMeta.meta_fields` (or `Meta.meta_fields`) on schema classes to expose selected fields in resource `meta`.
 
 ## Exported public API
 

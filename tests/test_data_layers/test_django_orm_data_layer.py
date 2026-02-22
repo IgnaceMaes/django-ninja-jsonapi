@@ -4,6 +4,7 @@ import pytest
 from django.test import RequestFactory
 
 from django_ninja_jsonapi.data_layers.django_orm.orm import DjangoORMDataLayer
+from django_ninja_jsonapi.exceptions import BadRequest
 
 
 class _AttributesRecorder:
@@ -121,3 +122,69 @@ async def test_delete_objects_uses_single_queryset_delete(monkeypatch):
 
     assert queryset.filter_kwargs == {"id__in": [1, 2]}
     assert queryset.deleted is True
+
+
+def test_apply_querystring_uses_django_filterset_when_configured():
+    class FakeQuerySet:
+        def filter(self, *args, **kwargs):
+            return self
+
+        def order_by(self, *args):
+            return self
+
+    filtered_queryset = SimpleNamespace(name="filtered")
+
+    class FakeFilterSet:
+        def __init__(self, data, queryset, request):
+            self.data = data
+            self.queryset = queryset
+            self.request = request
+            self.qs = filtered_queryset
+
+        def is_valid(self):
+            return True
+
+    request = RequestFactory().get("/api/customers")
+    data_layer = DjangoORMDataLayer(
+        request=request,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+        resource_type="customer",
+        django_filterset_class=FakeFilterSet,
+    )
+
+    result = data_layer._apply_django_filterset(FakeQuerySet())
+
+    assert result is filtered_queryset
+
+
+def test_apply_querystring_raises_bad_request_on_invalid_django_filterset():
+    class FakeQuerySet:
+        def filter(self, *args, **kwargs):
+            return self
+
+        def order_by(self, *args):
+            return self
+
+    class InvalidFilterSet:
+        errors = {"name": ["invalid"]}
+
+        def __init__(self, data, queryset, request):
+            self.qs = queryset
+
+        def is_valid(self):
+            return False
+
+    request = RequestFactory().get("/api/customers")
+    data_layer = DjangoORMDataLayer(
+        request=request,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+        resource_type="customer",
+        django_filterset_class=InvalidFilterSet,
+    )
+
+    with pytest.raises(BadRequest) as exc_info:
+        data_layer._apply_django_filterset(FakeQuerySet())
+
+    assert "Invalid django-filter query parameters" in exc_info.value.as_dict["detail"]

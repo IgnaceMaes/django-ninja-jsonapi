@@ -460,3 +460,51 @@ def test_detail_response_includes_jsonapi_when_enabled(monkeypatch):
     response = view._build_detail_response(SimpleNamespace(id=1))
 
     assert response["jsonapi"] == {"version": "1.0"}
+
+
+def test_prepare_item_data_extracts_resource_meta_fields(monkeypatch):
+    class FakeAttrsSchema:
+        @staticmethod
+        def model_validate(db_item):
+            return {
+                "name": db_item.name,
+                "status": db_item.status,
+            }
+
+    class FakeDataSchema:
+        def __init__(self, id, attributes):
+            self.id = id
+            self.attributes = attributes
+
+        def model_dump(self):
+            return {
+                "id": self.id,
+                "type": "customer",
+                "attributes": dict(self.attributes),
+            }
+
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.models_storage.get_object_id",
+        lambda db_item, resource_type: db_item.id,
+    )
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.schemas_storage.get_attrs_schema",
+        lambda resource_type, operation_type: FakeAttrsSchema,
+    )
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.schemas_storage.get_data_schema",
+        lambda resource_type, operation_type: FakeDataSchema,
+    )
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.schemas_storage.get_meta_fields",
+        lambda resource_type, operation_type: ["status"],
+    )
+
+    item_data = DummyView._prepare_item_data(
+        db_item=SimpleNamespace(id=1, name="John", status="active"),
+        resource_type="customer",
+        include_fields=None,
+    )
+
+    assert item_data["attributes"] == {"name": "John"}
+    assert item_data["meta"] == {"status": "active"}

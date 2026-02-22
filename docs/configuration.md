@@ -65,4 +65,19 @@ class CustomerView(ViewBaseGeneric):
     prefetch_for_includes = {
         "owner": ["owner__groups"],
     }
+    django_filterset_class = CustomerFilterSet
+```
+
+## Resource meta fields
+
+To move selected schema fields into resource `meta`, define `meta_fields`:
+
+```python
+class CustomerSchema(BaseModel):
+    id: int
+    name: str
+    status: str
+
+    class JSONAPIMeta:
+        meta_fields = ["status"]
 ```

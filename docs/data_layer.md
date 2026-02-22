@@ -17,6 +17,37 @@ The data layer is the CRUD boundary between view orchestration and persistence.
 
 You can subclass or replace data-layer classes when custom storage behavior is needed.
 
+## Optional django-filter integration
+
+You can plug a `django-filter` `FilterSet` class into a view.
+When configured, it runs before built-in JSON:API filter translation.
+
+```python
+from django_ninja_jsonapi import ViewBaseGeneric
+
+
+class CustomerView(ViewBaseGeneric):
+	django_filterset_class = CustomerFilterSet
+```
+
+If the filterset is invalid, the request returns `400 Bad Request`.
+
+## Resource-level meta fields
+
+You can expose resource `meta` by listing schema fields in `JSONAPIMeta.meta_fields` (or `Meta.meta_fields`).
+
+```python
+class CustomerSchema(BaseModel):
+	id: int
+	name: str
+	status: str
+
+	class JSONAPIMeta:
+		meta_fields = ["status"]
+```
+
+The listed fields are returned under `resource.meta` and omitted from `resource.attributes`.
+
 ## Example: custom data layer
 
 Snippet file: `docs/python_snippets/data_layer/custom_data_layer.py`

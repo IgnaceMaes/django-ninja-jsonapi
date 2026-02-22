@@ -49,6 +49,7 @@ class BaseJSONAPIItemSchema(BaseModel):
     type: str = Field(description="Resource type")
     attributes: dict = Field(description="Resource object attributes")
     links: Optional[dict[str, Any]] = Field(default=None, description="Resource links")
+    meta: Optional[dict[str, Any]] = Field(default=None, description="Resource meta")
 
 
 class BaseJSONAPIItemInSchema(BaseJSONAPIItemSchema):
@@ -186,6 +187,8 @@ class SchemasInfoDTO:
     field_schemas: dict[str, Type[BaseModel]]
 
     model_validators: dict
+
+    meta_fields: list[str]
 
 
 def get_model_field(schema: Type["TypeSchema"], field: str) -> str:

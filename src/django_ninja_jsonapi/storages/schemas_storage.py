@@ -62,6 +62,7 @@ class SchemasStorage:
         field_schemas: dict[str, Type[TypeSchema]],
         relationships_info: dict[str, tuple[RelationshipInfo, Any]],
         model_validators: dict,
+        meta_fields: Optional[list[str]] = None,
         schema_in: Optional[Type[TypeSchema]] = None,
     ):
         self._init_resource_if_needed(resource_type)
@@ -80,6 +81,7 @@ class SchemasStorage:
             "attrs_schema": attributes_schema,
             "field_schemas": field_schemas,
             "data_schema": data_schema,
+            "meta_fields": meta_fields or [],
             "relationships_info": {
                 relationship_name: info for relationship_name, (info, _) in relationships_info.items()
             },
@@ -146,6 +148,13 @@ class SchemasStorage:
         operation_type: Literal["create", "update", "get"],
     ) -> tuple[dict, dict]:
         return self._data[resource_type][operation_type]["model_validators"]
+
+    def get_meta_fields(
+        self,
+        resource_type: str,
+        operation_type: Literal["create", "update", "get"],
+    ) -> list[str]:
+        return self._data[resource_type][operation_type].get("meta_fields", [])
 
     def get_relationship_info(
         self,

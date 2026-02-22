@@ -33,6 +33,7 @@ class ViewBase:
     operation_dependencies: ClassVar[dict[Operation, OperationConfig]] = {}
     select_for_includes: ClassVar[dict[str, list[str]]] = {}
     prefetch_for_includes: ClassVar[dict[str, list[str]]] = {}
+    django_filterset_class: ClassVar[Optional[type]] = None
 
     def __init__(
         self,
@@ -75,6 +76,7 @@ class ViewBase:
             resource_type=self.resource_type,
             select_for_includes=self.select_for_includes,
             prefetch_for_includes=self.prefetch_for_includes,
+            django_filterset_class=self.django_filterset_class,
             **dl_kwargs,
         )
 
@@ -414,6 +416,12 @@ class ViewBase:
     ) -> dict:
         object_id = f"{models_storage.get_object_id(db_item, resource_type)}"
         attrs_schema = schemas_storage.get_attrs_schema(resource_type, operation_type="get")
+        meta_fields = schemas_storage.get_meta_fields(resource_type, operation_type="get")
+        resource_meta: dict[str, Any] = {}
+
+        for meta_field in meta_fields:
+            if hasattr(db_item, meta_field):
+                resource_meta[meta_field] = getattr(db_item, meta_field)
 
         if include_fields is None or not (field_schemas := include_fields.get(resource_type)):
             data_schema = schemas_storage.get_data_schema(resource_type, operation_type="get")
@@ -421,6 +429,13 @@ class ViewBase:
                 id=object_id,
                 attributes=attrs_schema.model_validate(db_item),
             ).model_dump()
+
+            for meta_field in meta_fields:
+                result.get("attributes", {}).pop(meta_field, None)
+
+            if resource_meta:
+                result["meta"] = resource_meta
+
             result["links"] = {}
             return result
 
@@ -459,7 +474,8 @@ class ViewBase:
         return {
             "id": object_id,
             "type": resource_type,
-            "attributes": result_attributes,
+            "attributes": {key: value for key, value in result_attributes.items() if key not in meta_fields},
+            "meta": resource_meta or None,
             "links": {},
         }
 

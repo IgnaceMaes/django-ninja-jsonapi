@@ -140,6 +140,7 @@ class SchemaBuilder:
             field_schemas=dto.field_schemas,
             relationships_info=dto.relationships_info,
             model_validators=dto.model_validators,
+            meta_fields=dto.meta_fields,
             schema_in=wrapped_object_jsonapi_schema,
         )
 
@@ -210,6 +211,17 @@ class SchemaBuilder:
         included_schemas: list[tuple[str, BaseModel, str]] = []
         has_required_relationship = False
         resource_id_field = (str, Field(default=None), None, {})
+        meta_fields: list[str] = []
+
+        for meta_attr in ("JSONAPIMeta", "Meta"):
+            meta_obj = getattr(schema, meta_attr, None)
+            if meta_obj is None:
+                continue
+
+            configured_meta_fields = getattr(meta_obj, "meta_fields", None)
+            if configured_meta_fields:
+                meta_fields = list(configured_meta_fields)
+                break
 
         # required! otherwise we get ForwardRef
         schema.model_rebuild(_types_namespace=registry.schemas)
@@ -283,6 +295,7 @@ class SchemaBuilder:
             included_schemas=included_schemas,
             field_schemas=field_schemas,
             model_validators=model_validators,
+            meta_fields=meta_fields,
         )
 
     @classmethod
@@ -461,6 +474,7 @@ class SchemaBuilder:
             field_schemas=dto.field_schemas,
             relationships_info=dto.relationships_info,
             model_validators=dto.model_validators,
+            meta_fields=dto.meta_fields,
         )
 
         can_be_included_schemas = {}
