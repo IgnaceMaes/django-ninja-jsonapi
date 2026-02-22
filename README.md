@@ -5,7 +5,7 @@ JSON:API toolkit for Django Ninja.
 [![CI](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/ci.yml/badge.svg)](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/ci.yml)
 [![Package](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/package.yml/badge.svg)](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/package.yml)
 
-This project ports the core ideas of `fastapi-jsonapi` to a Django Ninja + Django ORM stack.
+This project ports the core ideas of `fastapi-jsonapi` to a Django Ninja + Django ORM stack, following the [JSON:API specification](https://jsonapi.org/).
 
 Full documentation is available in [docs/index.md](docs/index.md).
 
