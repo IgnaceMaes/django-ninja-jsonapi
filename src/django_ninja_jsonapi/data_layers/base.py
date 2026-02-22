@@ -14,7 +14,7 @@ from django_ninja_jsonapi.common import search_client_can_set_id
 from django_ninja_jsonapi.data_typing import TypeModel, TypeSchema
 from django_ninja_jsonapi.querystring import QueryStringManager
 from django_ninja_jsonapi.schema import BaseJSONAPIItemInSchema
-from django_ninja_jsonapi.views import RelationshipRequestInfo
+from django_ninja_jsonapi.views.schemas import RelationshipRequestInfo
 
 
 class BaseDataLayer:
