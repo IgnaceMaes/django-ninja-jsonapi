@@ -123,5 +123,5 @@ Current tests cover:
 
 ## Notes
 
-- This is an actively ported codebase; feature parity with the original FastAPI package is still in progress.
-- The SQLAlchemy compatibility modules are retained in-tree for migration continuity, but Django ORM is the default runtime path.
+- This project is Django Ninja + Django ORM focused.
+- SQLAlchemy-specific modules have been removed to keep the codebase simpler and consistent.

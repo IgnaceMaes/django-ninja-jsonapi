@@ -193,7 +193,7 @@ def get_model_field(schema: Type["TypeSchema"], field: str) -> str:
     # todo: use alias (custom names)?
        For example:
 
-    class Computer(sqla_base):
+    class Computer:
         user = relationship(User)
 
     class ComputerSchema(pydantic_base):

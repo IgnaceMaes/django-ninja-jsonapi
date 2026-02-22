@@ -2,9 +2,8 @@
 
 ## Current limitations
 
-- This is a strong baseline port, but not yet full feature parity with the original FastAPI package test matrix.
-- SQLAlchemy compatibility modules still exist in-tree for migration continuity, while Django ORM is the default runtime path.
 - Some advanced JSON:API edge cases (deep relationship workflows and full atomic semantics) need broader integration coverage.
+- The current test suite is focused and pragmatic; adding more integration tests across real Django models/endpoints would further harden behavior.
 
 ## Roadmap ideas
 
