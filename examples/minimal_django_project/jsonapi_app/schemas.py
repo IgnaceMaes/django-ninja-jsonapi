@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class UserSchema(BaseModel):
+class CustomerSchema(BaseModel):
     id: int
     name: str
     email: str
@@ -13,7 +13,7 @@ class ComputerSchema(BaseModel):
     owner_id: int | None = None
 
 
-class UserSchemaIn(BaseModel):
+class CustomerSchemaIn(BaseModel):
     name: str
     email: str
 

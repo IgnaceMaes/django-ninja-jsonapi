@@ -26,15 +26,15 @@ Open docs at:
 
 ## Example requests
 
-Create user:
+Create customer:
 
 ```http
-POST /api/users
+POST /api/customers
 Content-Type: application/json
 
 {
   "data": {
-    "type": "user",
+    "type": "customer",
     "attributes": {
       "name": "John",
       "email": "john@example.com"
@@ -59,8 +59,8 @@ Content-Type: application/json
 }
 ```
 
-List users:
+List customers:
 
 ```http
-GET /api/users
+GET /api/customers
 ```

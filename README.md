@@ -38,11 +38,11 @@ from django.db import models
 from pydantic import BaseModel
 
 
-class User(models.Model):
+class Customer(models.Model):
     name = models.CharField(max_length=128)
 
 
-class UserSchema(BaseModel):
+class CustomerSchema(BaseModel):
     name: str
 ```
 
@@ -52,7 +52,7 @@ class UserSchema(BaseModel):
 from django_ninja_jsonapi import ViewBaseGeneric
 
 
-class UserView(ViewBaseGeneric):
+class CustomerView(ViewBaseGeneric):
     pass
 ```
 
@@ -67,12 +67,12 @@ api = NinjaAPI()
 builder = ApplicationBuilder(api)
 
 builder.add_resource(
-    path="/users",
-    tags=["users"],
-    resource_type="user",
-    view=UserView,
-    model=User,
-    schema=UserSchema,
+    path="/customers",
+    tags=["customers"],
+    resource_type="customer",
+    view=CustomerView,
+    model=Customer,
+    schema=CustomerSchema,
 )
 
 builder.initialize()

@@ -1,7 +1,7 @@
 from django_ninja_jsonapi import ViewBaseGeneric
 
 
-class UserView(ViewBaseGeneric):
+class CustomerView(ViewBaseGeneric):
     pass
 
 

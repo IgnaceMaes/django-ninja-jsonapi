@@ -1,6 +1,6 @@
 # Quickstart
 
-This guide shows a complete Django Ninja setup with two related resources (`user` and `computer`) and demonstrates CRUD + relationship workflows.
+This guide shows a complete Django Ninja setup with two related resources (`customer` and `computer`) and demonstrates CRUD + relationship workflows.
 
 ## 1) Install
 
@@ -16,14 +16,14 @@ Snippet file: `docs/python_snippets/quickstart/models.py`
 from django.db import models
 
 
-class User(models.Model):
+class Customer(models.Model):
     name = models.CharField(max_length=128)
     email = models.EmailField(unique=True)
 
 
 class Computer(models.Model):
     serial = models.CharField(max_length=128)
-    owner = models.ForeignKey(User, related_name="computers", null=True, blank=True, on_delete=models.SET_NULL)
+    owner = models.ForeignKey(Customer, related_name="computers", null=True, blank=True, on_delete=models.SET_NULL)
 ```
 
 ## 3) Define JSON:API schemas (logical API layer)
@@ -42,12 +42,12 @@ class ComputerSchema(BaseModel):
     id: int
     serial: str
     owner: Annotated[
-        Optional["UserSchema"],
-        RelationshipInfo(resource_type="user", many=False),
+        Optional["CustomerSchema"],
+        RelationshipInfo(resource_type="customer", many=False),
     ] = None
 
 
-class UserSchema(BaseModel):
+    class CustomerSchema(BaseModel):
     id: int
     name: str
     email: str
@@ -63,7 +63,7 @@ class UserSchema(BaseModel):
 from django_ninja_jsonapi import ViewBaseGeneric
 
 
-class UserView(ViewBaseGeneric):
+class CustomerView(ViewBaseGeneric):
     pass
 
 
@@ -83,12 +83,12 @@ api = NinjaAPI()
 builder = ApplicationBuilder(api)
 
 builder.add_resource(
-    path="/users",
-    tags=["users"],
-    resource_type="user",
-    view=UserView,
-    model=User,
-    schema=UserSchema,
+    path="/customers",
+    tags=["customers"],
+    resource_type="customer",
+    view=CustomerView,
+    model=Customer,
+    schema=CustomerSchema,
 )
 
 builder.add_resource(
@@ -120,32 +120,32 @@ uv run python manage.py runserver
 
 ## Generated endpoint shape
 
-For `/users`:
+For `/customers`:
 
-- `GET /api/users`
-- `POST /api/users`
-- `GET /api/users/{id}`
-- `PATCH /api/users/{id}`
-- `DELETE /api/users/{id}`
+- `GET /api/customers`
+- `POST /api/customers`
+- `GET /api/customers/{id}`
+- `PATCH /api/customers/{id}`
+- `DELETE /api/customers/{id}`
 
 Relationship endpoints (from `RelationshipInfo`):
 
-- `GET /api/users/{id}/computers`
-- `GET /api/users/{id}/relationships/computers`
+- `GET /api/customers/{id}/computers`
+- `GET /api/customers/{id}/relationships/computers`
 
 ## Example requests
 
-### Create user
+### Create customer
 
 JSON snippet: `docs/http_snippets/quickstart__create_user.json`
 
 ```http
-POST /api/users
+POST /api/customers
 Content-Type: application/json
 
 {
     "data": {
-        "type": "user",
+        "type": "customer",
         "attributes": {
             "name": "John",
             "email": "john@example.com"
@@ -154,23 +154,23 @@ Content-Type: application/json
 }
 ```
 
-### List users with related computers
+### List customers with related computers
 
 ```http
-GET /api/users?include=computers&fields[user]=name,email,computers&fields[computer]=serial
+GET /api/customers?include=computers&fields[customer]=name,email,computers&fields[computer]=serial
 ```
 
-### Update user
+### Update customer
 
 JSON snippet: `docs/http_snippets/quickstart__update_user.json`
 
 ```http
-PATCH /api/users/1
+PATCH /api/customers/1
 Content-Type: application/json
 
 {
     "data": {
-        "type": "user",
+        "type": "customer",
         "id": "1",
         "attributes": {
             "name": "John Updated"

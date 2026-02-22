@@ -9,12 +9,12 @@ class ComputerSchema(BaseModel):
     id: int
     serial: str
     owner: Annotated[
-        Optional["UserSchema"],
-        RelationshipInfo(resource_type="user", many=False),
+        Optional["CustomerSchema"],
+        RelationshipInfo(resource_type="customer", many=False),
     ] = None
 
 
-class UserSchema(BaseModel):
+class CustomerSchema(BaseModel):
     id: int
     name: str
     email: str

@@ -2,11 +2,11 @@ from ninja import NinjaAPI
 
 from django_ninja_jsonapi import ApplicationBuilder, ViewBaseGeneric
 
-from app.models import Computer, User
-from app.schemas import ComputerSchema, UserSchema
+from app.models import Computer, Customer
+from app.schemas import ComputerSchema, CustomerSchema
 
 
-class UserView(ViewBaseGeneric):
+class CustomerView(ViewBaseGeneric):
     pass
 
 
@@ -18,12 +18,12 @@ api = NinjaAPI()
 builder = ApplicationBuilder(api)
 
 builder.add_resource(
-    path="/users",
-    tags=["users"],
-    resource_type="user",
-    view=UserView,
-    model=User,
-    schema=UserSchema,
+    path="/customers",
+    tags=["customers"],
+    resource_type="customer",
+    view=CustomerView,
+    model=Customer,
+    schema=CustomerSchema,
 )
 
 builder.add_resource(
