@@ -19,6 +19,8 @@ You can subclass or replace data-layer classes when custom storage behavior is n
 
 ## Example: custom data layer
 
+Snippet file: `docs/python_snippets/data_layer/custom_data_layer.py`
+
 ```python
 from django_ninja_jsonapi.data_layers.django_orm.orm import DjangoORMDataLayer
 

@@ -1,0 +1,16 @@
+{
+  "method": "POST",
+  "path": "/api/users",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "data": {
+      "type": "user",
+      "attributes": {
+        "name": "John",
+        "email": "john@example.com"
+      }
+    }
+  }
+}

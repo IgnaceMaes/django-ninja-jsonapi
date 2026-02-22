@@ -48,6 +48,34 @@ Content-Type: application/json
 }
 ```
 
+```python
+import httpx
+
+payload = {
+	"atomic:operations": [
+		{
+			"op": "add",
+			"data": {
+				"type": "user",
+				"lid": "user-1",
+				"attributes": {"name": "John", "email": "john@example.com"},
+			},
+		},
+		{
+			"op": "add",
+			"data": {
+				"type": "computer",
+				"attributes": {"serial": "ABC-123"},
+				"relationships": {"owner": {"data": {"type": "user", "lid": "user-1"}}},
+			},
+		},
+	]
+}
+
+response = httpx.post("http://localhost:8000/operations", json=payload)
+print(response.status_code, response.json())
+```
+
 ## Response example
 
 ```json

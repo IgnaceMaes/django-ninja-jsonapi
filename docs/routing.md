@@ -4,6 +4,8 @@
 
 ## Resource registration example
 
+Snippet file: `docs/python_snippets/routing/router.py`
+
 ```python
 builder.add_resource(
 	path="/users",

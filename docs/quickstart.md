@@ -10,6 +10,8 @@ uv sync
 
 ## 2) Define models
 
+Snippet file: `docs/python_snippets/quickstart/models.py`
+
 ```python
 from django.db import models
 
@@ -25,6 +27,8 @@ class Computer(models.Model):
 ```
 
 ## 3) Define JSON:API schemas (logical API layer)
+
+Snippet file: `docs/python_snippets/quickstart/schemas.py`
 
 ```python
 from typing import Annotated, Optional
@@ -68,6 +72,8 @@ class ComputerView(ViewBaseGeneric):
 ```
 
 ## 5) Register resources
+
+Snippet file: `docs/python_snippets/quickstart/api.py`
 
 ```python
 from ninja import NinjaAPI
@@ -131,6 +137,8 @@ Relationship endpoints (from `RelationshipInfo`):
 
 ### Create user
 
+JSON snippet: `docs/http_snippets/quickstart__create_user.json`
+
 ```http
 POST /api/users
 Content-Type: application/json
@@ -153,6 +161,8 @@ GET /api/users?include=computers&fields[user]=name,email,computers&fields[comput
 ```
 
 ### Update user
+
+JSON snippet: `docs/http_snippets/quickstart__update_user.json`
 
 ```http
 PATCH /api/users/1

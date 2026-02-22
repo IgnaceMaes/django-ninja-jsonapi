@@ -20,6 +20,17 @@ GET /users?page[number]=2
 GET /users?page[size]=10&page[number]=2
 ```
 
+```python
+import httpx
+
+response = httpx.get(
+	"http://localhost:8000/api/users",
+	params={"page[size]": 10, "page[number]": 2},
+)
+payload = response.json()
+print(payload.get("meta"))
+```
+
 Typical list response contains pagination metadata:
 
 ```json

@@ -16,6 +16,11 @@ Use this mechanism for request-scoped behavior instead of hard-coding globals in
 
 ## Example
 
+Snippet files:
+
+- `docs/python_snippets/view_dependencies/main_example.py`
+- `docs/python_snippets/view_dependencies/several_dependencies.py`
+
 ```python
 from pydantic import BaseModel
 

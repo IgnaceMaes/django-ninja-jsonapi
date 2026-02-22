@@ -16,6 +16,20 @@ GET /users/1?include=computers&fields[computer]=serial
 GET /users/1?include=computers&fields[user]=name,computers&fields[computer]=serial
 ```
 
+```python
+import httpx
+
+response = httpx.get(
+	"http://localhost:8000/api/users/1",
+	params={
+		"include": "computers",
+		"fields[user]": "name,computers",
+		"fields[computer]": "serial",
+	},
+)
+print(response.json())
+```
+
 Example effect:
 
 ```json

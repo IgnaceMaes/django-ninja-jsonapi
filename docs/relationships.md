@@ -4,6 +4,11 @@ Define relationships in resource schemas so the builder can expose related and r
 
 ## Schema example
 
+Snippet files:
+
+- `docs/python_snippets/relationships/models.py`
+- `docs/python_snippets/relationships/relationships_info_example.py`
+
 ```python
 from typing import Annotated, Optional
 

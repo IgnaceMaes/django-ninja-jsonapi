@@ -8,6 +8,14 @@ Use `include` to request related resources in the response `included` section.
 GET /users/1?include=computers
 ```
 
+```python
+import httpx
+
+response = httpx.get("http://localhost:8000/api/users/1?include=computers")
+data = response.json()
+print(data.get("included", []))
+```
+
 Example response shape:
 
 ```json
@@ -42,6 +50,14 @@ GET /users/1?include=computers.owner
 
 ```http
 GET /users/1?include=computers&fields[user]=name,computers&fields[computer]=serial
+```
+
+```python
+import httpx
+
+url = "http://localhost:8000/api/users/1?include=computers&fields[user]=name,computers&fields[computer]=serial"
+response = httpx.get(url)
+print(response.json())
 ```
 
 ## Notes

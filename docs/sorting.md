@@ -21,6 +21,13 @@ GET /users?sort=-name
 GET /users?sort=-name,created_at
 ```
 
+```python
+import httpx
+
+response = httpx.get("http://localhost:8000/api/users", params={"sort": "-name,created_at"})
+print(response.json())
+```
+
 ## Relationship path sorting
 
 ```http

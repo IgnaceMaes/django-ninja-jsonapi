@@ -8,6 +8,19 @@ Filtering uses the `filter` query parameter and is translated by the data layer.
 GET /users?filter=[{"name":"name","op":"eq","val":"John"}]
 ```
 
+```python
+import json
+from urllib.parse import quote
+
+import httpx
+
+flt = json.dumps([{"name": "name", "op": "eq", "val": "John"}])
+url = f"http://localhost:8000/api/users?filter={quote(flt)}"
+
+response = httpx.get(url)
+print(response.status_code, response.json())
+```
+
 ## Full JSON filter format (multiple conditions)
 
 ```http
@@ -58,3 +71,4 @@ You can send full filter objects for complex expressions when your data-layer im
 
 - URL-encode JSON values in production clients.
 - Supported operators are data-layer specific.
+
