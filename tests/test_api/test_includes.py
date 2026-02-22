@@ -508,3 +508,35 @@ def test_prepare_item_data_extracts_resource_meta_fields(monkeypatch):
 
     assert item_data["attributes"] == {"name": "John"}
     assert item_data["meta"] == {"status": "active"}
+
+
+def test_prepare_item_data_omits_resource_meta_when_not_configured(monkeypatch):
+    class FakeFieldSchema:
+        def __init__(self, name):
+            self.name = name
+
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.models_storage.get_object_id",
+        lambda db_item, resource_type: db_item.id,
+    )
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.schemas_storage.get_meta_fields",
+        lambda resource_type, operation_type: [],
+    )
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.schemas_storage.get_attrs_schema",
+        lambda resource_type, operation_type: object,
+    )
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.views.view_base.schemas_storage.get_model_validators",
+        lambda resource_type, operation_type: ({}, {}),
+    )
+
+    item_data = DummyView._prepare_item_data(
+        db_item=SimpleNamespace(id=1, name="John"),
+        resource_type="customer",
+        include_fields={"customer": {"name": FakeFieldSchema}},
+    )
+
+    assert item_data["attributes"] == {"name": "John"}
+    assert "meta" not in item_data

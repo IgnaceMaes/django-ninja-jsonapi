@@ -471,13 +471,17 @@ class ViewBase:
 
                 result_attributes[field_name] = getattr(validated_model, field_name)
 
-        return {
+        result = {
             "id": object_id,
             "type": resource_type,
             "attributes": {key: value for key, value in result_attributes.items() if key not in meta_fields},
-            "meta": resource_meta or None,
             "links": {},
         }
+
+        if resource_meta:
+            result["meta"] = resource_meta
+
+        return result
 
     def _prepare_include_params(self) -> list[list[str]]:
         result = []
