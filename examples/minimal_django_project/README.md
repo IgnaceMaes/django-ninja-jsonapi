@@ -17,12 +17,21 @@ uv sync --dev
 cd examples/minimal_django_project
 uv run python manage.py makemigrations jsonapi_app
 uv run python manage.py migrate
+uv run python manage.py seed_demo_data
 uv run python manage.py runserver
 ```
 
 Open docs at:
 
 - `http://127.0.0.1:8000/api/docs`
+
+## Seed dummy data
+
+Populate demo records (safe to run multiple times):
+
+```bash
+uv run python manage.py seed_demo_data
+```
 
 ## Example requests
 
