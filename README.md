@@ -117,6 +117,25 @@ uv run pytest --cov=src/django_ninja_jsonapi --cov-report=term-missing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution workflow.
 
+## Release process
+
+Releases are automated with GitHub Actions:
+
+1. Merge conventional-commit PRs into `main`.
+2. `Release Please` opens or updates a release PR with version bump + changelog updates.
+3. Merge the release PR to create a GitHub Release.
+4. `Publish to PyPI` runs on `release: published` and uploads the built package to PyPI.
+
+Workflows:
+
+- `.github/workflows/release-please.yml`
+- `.github/workflows/publish.yml`
+
+Required repository secrets:
+
+- `REPO_ADMIN_TOKEN` (used by Release Please)
+- `PYPI_API_TOKEN` (used for PyPI publishing)
+
 ## Test coverage
 
 Current tests cover:

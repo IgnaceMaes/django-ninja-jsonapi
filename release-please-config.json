@@ -1,0 +1,22 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "package-name": "django-ninja-jsonapi",
+      "prerelease": false,
+      "include-component-in-tag": false,
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "pyproject.toml",
+          "jsonpath": "$.project.version"
+        },
+        {
+          "type": "generic",
+          "path": "src/django_ninja_jsonapi/VERSION"
+        }
+      ]
+    }
+  }
+}
