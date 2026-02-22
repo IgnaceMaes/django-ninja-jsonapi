@@ -100,7 +100,7 @@ urlpatterns = [
 Set JSON:API options in Django settings:
 
 ```python
-JSONAPI = {
+NINJA_JSONAPI = {
     "MAX_INCLUDE_DEPTH": 3,
     "MAX_PAGE_SIZE": 100,
     "ALLOW_DISABLE_PAGINATION": True,

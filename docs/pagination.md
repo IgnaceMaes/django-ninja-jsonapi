@@ -51,4 +51,4 @@ Depending on configuration, pagination can be disabled with:
 GET /customers?page[size]=0
 ```
 
-This only works when `JSONAPI["ALLOW_DISABLE_PAGINATION"]` is `True`.
+This only works when `NINJA_JSONAPI["ALLOW_DISABLE_PAGINATION"]` is `True`.

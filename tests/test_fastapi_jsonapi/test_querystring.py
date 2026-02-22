@@ -55,7 +55,7 @@ def test_fields_unknown_attribute_raises_invalid_field(monkeypatch):
         _ = QueryStringManager(request).fields
 
 
-@override_settings(JSONAPI={"MAX_INCLUDE_DEPTH": 1, "MAX_PAGE_SIZE": 100, "ALLOW_DISABLE_PAGINATION": True})
+@override_settings(NINJA_JSONAPI={"MAX_INCLUDE_DEPTH": 1, "MAX_PAGE_SIZE": 100, "ALLOW_DISABLE_PAGINATION": True})
 def test_include_depth_limit_raises_invalid_include():
     request = RequestFactory().get("/api/users", {"include": "posts.author"})
 
@@ -63,7 +63,7 @@ def test_include_depth_limit_raises_invalid_include():
         _ = QueryStringManager(request).include
 
 
-@override_settings(JSONAPI={"ALLOW_DISABLE_PAGINATION": False, "MAX_PAGE_SIZE": 100, "MAX_INCLUDE_DEPTH": 3})
+@override_settings(NINJA_JSONAPI={"ALLOW_DISABLE_PAGINATION": False, "MAX_PAGE_SIZE": 100, "MAX_INCLUDE_DEPTH": 3})
 def test_disable_pagination_not_allowed_raises_bad_request():
     request = RequestFactory().get("/api/users", {"page[size]": "0"})
 

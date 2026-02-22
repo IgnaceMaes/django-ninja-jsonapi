@@ -62,7 +62,7 @@ class QueryStringManager:
         """
         self.request: HttpRequest = request
         self.qs = request.GET
-        self.config: dict[str, Any] = getattr(settings, "JSONAPI", {})
+        self.config: dict[str, Any] = getattr(settings, "NINJA_JSONAPI", {})
         self.ALLOW_DISABLE_PAGINATION: bool = self.config.get("ALLOW_DISABLE_PAGINATION", True)
         self.MAX_PAGE_SIZE: int = self.config.get("MAX_PAGE_SIZE", 10000)
         self.MAX_INCLUDE_DEPTH: int = self.config.get("MAX_INCLUDE_DEPTH", 3)
