@@ -34,7 +34,6 @@ class DummyView:
         return None
 
 
-
 def _collect_path_methods(api: NinjaAPI) -> dict[str, set[str]]:
     path_methods: dict[str, set[str]] = {}
     for _, router in api._routers:
