@@ -14,6 +14,7 @@ __all__ = [
     "BadRequest",
     "HTTPException",
     "QueryStringManager",
+    "ViewBaseGeneric",
 ]
 
 
@@ -22,5 +23,10 @@ def __getattr__(name: str) -> Any:
         from django_ninja_jsonapi.api.application_builder import ApplicationBuilder
 
         return ApplicationBuilder
+
+    if name == "ViewBaseGeneric":
+        from django_ninja_jsonapi.generics import ViewBaseGeneric
+
+        return ViewBaseGeneric
 
     raise AttributeError(name)

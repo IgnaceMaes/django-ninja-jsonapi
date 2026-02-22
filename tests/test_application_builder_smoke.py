@@ -3,6 +3,7 @@ from ninja import NinjaAPI
 from pydantic import BaseModel
 
 from django_ninja_jsonapi.api.application_builder import ApplicationBuilder, ApplicationBuilderError
+from django_ninja_jsonapi.generics import ViewBaseGeneric
 from django_ninja_jsonapi.views.enums import Operation
 
 
@@ -107,3 +108,16 @@ def test_builder_cannot_add_resource_after_initialize():
             schema=DummySchema,
             operations=[Operation.GET_LIST],
         )
+
+
+def test_relationship_path_builder_shape():
+    assert ApplicationBuilder._create_relationship_path("/users", "posts", ending_slash=True) == (
+        "/users/{obj_id}/relationships/posts/"
+    )
+    assert ApplicationBuilder._create_relationship_path("/users/", "posts", ending_slash=False) == (
+        "/users/{obj_id}/relationships/posts"
+    )
+
+
+def test_simplified_generics_import_path_exposes_view_base_generic():
+    assert ViewBaseGeneric.__name__ == "ViewBaseGeneric"

@@ -149,9 +149,9 @@ class ApplicationBuilder:
                     relationship_name=relationship_name,
                     operation=operation,
                 )
-                relationship_path = self._create_path(
-                    path=f"{data.path}/relationships/{relationship_name}",
-                    include_object_id=True,
+                relationship_path = self._create_relationship_path(
+                    resource_path=data.path,
+                    relationship_name=relationship_name,
                     ending_slash=data.ending_slash,
                 )
 
@@ -204,3 +204,11 @@ class ApplicationBuilder:
         if ending_slash:
             return f"{base_path}/"
         return base_path
+
+    @staticmethod
+    def _create_relationship_path(resource_path: str, relationship_name: str, ending_slash: bool) -> str:
+        base_path = resource_path.rstrip("/")
+        path = f"{base_path}/{{obj_id}}/relationships/{relationship_name}"
+        if ending_slash:
+            return f"{path}/"
+        return path
