@@ -4,6 +4,7 @@ from django.test import RequestFactory
 
 from django_ninja_jsonapi.exceptions import BadRequest
 from django_ninja_jsonapi.exceptions.handlers import base_exception_handler
+from django_ninja_jsonapi.renderers import JSONAPI_MEDIA_TYPE
 
 
 def test_base_exception_handler_returns_jsonapi_error_shape():
@@ -16,3 +17,4 @@ def test_base_exception_handler_returns_jsonapi_error_shape():
     assert "errors" in payload
     assert payload["errors"][0]["detail"] == "invalid input"
     assert payload["errors"][0]["source"] == {"parameter": "filter"}
+    assert response["Content-Type"].startswith(JSONAPI_MEDIA_TYPE)

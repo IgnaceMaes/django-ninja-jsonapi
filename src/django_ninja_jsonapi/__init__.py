@@ -6,6 +6,7 @@ from typing import Any
 from django_ninja_jsonapi.exceptions import BadRequest
 from django_ninja_jsonapi.exceptions.json_api import HTTPException
 from django_ninja_jsonapi.querystring import QueryStringManager
+from django_ninja_jsonapi.renderers import JSONAPIRenderer
 
 __version__ = Path(__file__).parent.joinpath("VERSION").read_text().strip()
 
@@ -13,6 +14,7 @@ __all__ = [
     "ApplicationBuilder",
     "BadRequest",
     "HTTPException",
+    "JSONAPIRenderer",
     "QueryStringManager",
     "ViewBaseGeneric",
 ]

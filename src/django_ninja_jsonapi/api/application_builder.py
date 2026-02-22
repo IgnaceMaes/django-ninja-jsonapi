@@ -10,6 +10,7 @@ from django_ninja_jsonapi.atomic.atomic import AtomicOperations
 from django_ninja_jsonapi.data_typing import TypeModel
 from django_ninja_jsonapi.exceptions import HTTPException
 from django_ninja_jsonapi.exceptions.handlers import base_exception_handler
+from django_ninja_jsonapi.renderers import JSONAPIRenderer
 from django_ninja_jsonapi.schema_builder import SchemaBuilder
 from django_ninja_jsonapi.storages.models_storage import models_storage
 from django_ninja_jsonapi.storages.schemas_storage import schemas_storage
@@ -37,6 +38,7 @@ class ApplicationBuilder:
         self._resource_data: dict[str, ResourceData] = {}
         self._exception_handler: Callable = exception_handler or base_exception_handler
         self._initialized = False
+        self._api.renderer = JSONAPIRenderer()
 
     def add_resource(
         self,

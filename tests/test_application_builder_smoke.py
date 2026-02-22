@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from django_ninja_jsonapi.api.application_builder import ApplicationBuilder, ApplicationBuilderError
 from django_ninja_jsonapi.generics import ViewBaseGeneric
+from django_ninja_jsonapi.renderers import JSONAPI_MEDIA_TYPE
 from django_ninja_jsonapi.views.enums import Operation
 
 
@@ -62,6 +63,7 @@ def test_builder_initializes_and_registers_routes():
     assert "/dummy/" in route_keys
     assert "/dummy/{obj_id}/" in route_keys
     assert "/operations" in route_keys
+    assert api.renderer.media_type == JSONAPI_MEDIA_TYPE
 
 
 def test_builder_cannot_initialize_twice():
