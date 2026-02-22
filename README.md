@@ -23,11 +23,17 @@ Full documentation is available in [docs/index.md](docs/index.md).
 - Django 4.2+
 - Django Ninja 1.0+
 
-## Install (uv)
+## Install
 
 ```bash
-uv sync
+uv add django-ninja-jsonapi
 ```
+
+or
+
+- `pip install django-ninja-jsonapi`
+- `poetry add django-ninja-jsonapi`
+- `pdm add django-ninja-jsonapi`
 
 ## Quick start
 
