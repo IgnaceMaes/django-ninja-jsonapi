@@ -120,7 +120,18 @@ Additional view/schema options:
 ## Exported public API
 
 ```python
-from django_ninja_jsonapi import ApplicationBuilder, QueryStringManager, HTTPException, BadRequest, ViewBaseGeneric
+from django_ninja_jsonapi import (
+    ApplicationBuilder,
+    QueryStringManager,
+    HTTPException,
+    BadRequest,
+    ViewBaseGeneric,
+    JSONAPIRenderer,
+    jsonapi_resource,
+    jsonapi_include,
+    jsonapi_meta,
+    jsonapi_links,
+)
 ```
 
 ## Contributing

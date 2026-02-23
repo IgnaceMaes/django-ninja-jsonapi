@@ -23,6 +23,7 @@
 - [Getting started](getting-started.md)
 - [Installation](installation.md)
 - [Quickstart](quickstart.md)
+- [Standalone renderer](standalone_renderer.md)
 
 ### Usage
 
