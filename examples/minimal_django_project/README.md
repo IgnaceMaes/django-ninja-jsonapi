@@ -24,6 +24,7 @@ uv run python manage.py runserver
 Open docs at:
 
 - `http://127.0.0.1:8000/api/docs`
+- `http://127.0.0.1:8000/api-standalone/docs`
 
 ## Seed dummy data
 
@@ -72,6 +73,20 @@ List customers:
 
 ```http
 GET /api/customers
+```
+
+List customers (standalone renderer):
+
+```http
+GET /api-standalone/customers
+Accept: application/vnd.api+json
+```
+
+Get a customer with included computers (standalone renderer):
+
+```http
+GET /api-standalone/customers/1
+Accept: application/vnd.api+json
 ```
 
 Paginated customers:
