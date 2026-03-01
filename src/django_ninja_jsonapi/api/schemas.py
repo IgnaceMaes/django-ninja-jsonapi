@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, Type, Union
+from typing import Any, Iterable, Optional, Type
 
 from pydantic import BaseModel
 
@@ -7,7 +7,7 @@ from django_ninja_jsonapi.views.enums import Operation
 
 
 class ResourceData(BaseModel):
-    path: Union[str, list[str]]
+    path: str
     tags: list[str]
     view: Type[Any]
     model: Type[TypeModel]

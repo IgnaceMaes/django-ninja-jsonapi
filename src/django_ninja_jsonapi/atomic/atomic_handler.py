@@ -16,6 +16,7 @@ from django_ninja_jsonapi.atomic.schemas import (
     AtomicOperationRequest,
     AtomicResultResponse,
     OperationItemInSchema,
+    OperationRelationshipSchema,
 )
 from django_ninja_jsonapi.exceptions import HTTPException
 from django_ninja_jsonapi.storages.schemas_storage import schemas_storage
@@ -71,8 +72,12 @@ class AtomicViewHandler:
         :param operation:
         :return:
         """
-        resource_type = (operation.ref and operation.ref.type) or (operation.data and operation.data.type)
-        if not schemas_storage.has_resource(resource_type):
+        resource_type: str | None = None
+        if operation.ref:
+            resource_type = operation.ref.type
+        elif isinstance(operation.data, (OperationItemInSchema, OperationRelationshipSchema)):
+            resource_type = operation.data.type
+        if not isinstance(resource_type, str) or not schemas_storage.has_resource(resource_type):
             msg = f"Unknown resource type {resource_type!r}."
             raise ValueError(msg)
 

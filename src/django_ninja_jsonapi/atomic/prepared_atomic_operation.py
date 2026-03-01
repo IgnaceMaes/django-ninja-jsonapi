@@ -13,12 +13,11 @@ from django_ninja_jsonapi.atomic.schemas import (
     OperationRelationshipSchema,
 )
 from django_ninja_jsonapi.data_layers.base import BaseDataLayer
-from django_ninja_jsonapi.data_typing import TypeSchema
 from django_ninja_jsonapi.storages import models_storage, schemas_storage, views_storage
 from django_ninja_jsonapi.views import Operation, OperationConfig, ViewBase
 
 LocalIdsType = dict[str, dict[str, str]]
-atomic_dependency_handlers: dict[(str, Operation), dict[str, Any]] = {}
+atomic_dependency_handlers: dict[tuple[str, Operation], dict[str, Any]] = {}
 
 
 @dataclass
@@ -32,7 +31,7 @@ class OperationBase:
     @classmethod
     def prepare(
         cls,
-        action: str,
+        action: Any,
         request: HttpRequest,
         resource_type: str,
         ref: Optional[AtomicOperationRef],
@@ -124,7 +123,7 @@ class OperationBase:
         )
         return await self.view.get_data_layer(data_layer_view_dependencies)
 
-    async def handle(self, dl: BaseDataLayer) -> Optional[TypeSchema]:
+    async def handle(self, dl: BaseDataLayer) -> Optional[dict]:
         raise NotImplementedError
 
     @classmethod
@@ -243,11 +242,14 @@ class OperationBase:
 
 
 class OperationAdd(OperationBase):
-    async def handle(self, dl: BaseDataLayer) -> dict:
+    async def handle(self, dl: BaseDataLayer) -> Optional[dict]:
         # use outer schema wrapper because we need this error path:
         # `{'loc': ['data', 'attributes', 'name']`
         # and not `{'loc': ['attributes', 'name']`
         schema_in_create = schemas_storage.get_schema_in(self.resource_type, operation_type="create")
+        if not isinstance(self.data, OperationItemInSchema):
+            msg = "Atomic add operation expects resource object data"
+            raise ValueError(msg)
         data_in = schema_in_create(data=self.data.model_dump(exclude_unset=True))
         return await self.view.process_create_object(
             dl=dl,
@@ -256,7 +258,7 @@ class OperationAdd(OperationBase):
 
 
 class OperationUpdate(OperationBase):
-    async def handle(self, dl: BaseDataLayer) -> dict:
+    async def handle(self, dl: BaseDataLayer) -> Optional[dict]:
         obj_id = (self.ref and self.ref.id) or (self.data and getattr(self.data, "id", None))
         if obj_id is None:
             msg = "Object id is required for atomic update operation"

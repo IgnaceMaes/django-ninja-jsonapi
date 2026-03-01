@@ -3,7 +3,7 @@
 import re
 from collections import defaultdict
 from functools import cached_property
-from typing import Any, Optional, Type
+from typing import Any, Optional
 from urllib.parse import unquote
 
 import orjson as json
@@ -223,7 +223,7 @@ class QueryStringManager:
         # check values type
         pagination_data: dict[str, str] = self._get_unique_key_values("page")
         try:
-            pagination = PaginationQueryStringManager(**pagination_data)
+            pagination = PaginationQueryStringManager(**pagination_data)  # ty: ignore[invalid-argument-type]
         except ValidationError as ex:
             raise BadRequest(detail="Invalid pagination query parameter", parameter="page") from ex
 
@@ -271,7 +271,8 @@ class QueryStringManager:
                 msg = f"Application has no resource with type {resource_type!r}"
                 raise InvalidType(msg)
 
-            schema: Type[BaseModel] = schemas_storage.get_attrs_schema(resource_type, "get")
+            schema = schemas_storage.get_attrs_schema(resource_type, "get")
+            assert schema is not None
 
             for field_name in field_names:
                 if field_name == "":

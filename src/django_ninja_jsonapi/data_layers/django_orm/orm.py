@@ -50,10 +50,10 @@ class DjangoORMDataLayer(BaseDataLayer):
     async def create_object(self, data_create: BaseJSONAPIItemInSchema, view_kwargs: dict):
         await self.before_create_object(data_create, view_kwargs)
 
-        model_kwargs = data_create.attributes.model_dump(exclude_unset=True)
+        model_kwargs = data_create.attributes.model_dump(exclude_unset=True)  # ty: ignore[unresolved-attribute]
         model_kwargs = self._apply_client_generated_id(data_create, model_kwargs)
 
-        db_object = await sync_to_async(BaseDjangoORM.create, thread_sensitive=True)(self.model, **model_kwargs)
+        db_object = await sync_to_async(BaseDjangoORM.create, thread_sensitive=True)(self.model, **model_kwargs)  # ty: ignore[invalid-argument-type]
         atomic_ctx = await self._start_nested_atomic()
         try:
             await self._apply_relationships(db_object, data_create)
@@ -73,7 +73,7 @@ class DjangoORMDataLayer(BaseDataLayer):
     ):
         await self.before_get_object(view_kwargs)
 
-        queryset = BaseDjangoORM.queryset(self.model)
+        queryset = BaseDjangoORM.queryset(self.model)  # ty: ignore[invalid-argument-type]
         if qs is not None:
             queryset = self._apply_querystring(queryset, qs)
 
@@ -121,7 +121,7 @@ class DjangoORMDataLayer(BaseDataLayer):
     ):
         await self.before_get_collection(qs, view_kwargs)
 
-        queryset = BaseDjangoORM.queryset(self.model)
+        queryset = BaseDjangoORM.queryset(self.model)  # ty: ignore[invalid-argument-type]
         if view_kwargs:
             queryset = queryset.filter(**view_kwargs)
 
@@ -168,10 +168,12 @@ class DjangoORMDataLayer(BaseDataLayer):
             id_field_name = models_storage.get_model_id_field_name(self.resource_type)
             queryset = queryset.order_by(id_field_name)
             paged_queryset = queryset.filter(**{f"{id_field_name}__gt": qs.pagination.cursor})
-            limited_queryset = paged_queryset[: qs.pagination.size + 1]
+            size = qs.pagination.size
+            assert size is not None
+            limited_queryset = paged_queryset[: size + 1]
             items = await sync_to_async(list, thread_sensitive=True)(limited_queryset)
 
-            if len(items) > qs.pagination.size:
+            if len(items) > size:
                 overflow_item = items.pop()
                 qs.pagination.next_cursor = str(getattr(overflow_item, id_field_name))
             else:
@@ -194,7 +196,7 @@ class DjangoORMDataLayer(BaseDataLayer):
     async def update_object(self, obj, data_update: BaseJSONAPIItemInSchema, view_kwargs: dict):
         await self.before_update_object(obj, data_update, view_kwargs)
 
-        model_kwargs = data_update.attributes.model_dump(exclude_unset=True)
+        model_kwargs = data_update.attributes.model_dump(exclude_unset=True)  # ty: ignore[unresolved-attribute]
         atomic_ctx = await self._start_nested_atomic()
         try:
             await sync_to_async(BaseDjangoORM.update, thread_sensitive=True)(obj, **model_kwargs)
@@ -223,7 +225,7 @@ class DjangoORMDataLayer(BaseDataLayer):
 
         id_field_name = models_storage.get_model_id_field_name(self.resource_type)
         object_ids = [getattr(obj, id_field_name) for obj in objects]
-        queryset = BaseDjangoORM.queryset(self.model).filter(**{f"{id_field_name}__in": object_ids})
+        queryset = BaseDjangoORM.queryset(self.model).filter(**{f"{id_field_name}__in": object_ids})  # ty: ignore[invalid-argument-type]
         await sync_to_async(queryset.delete, thread_sensitive=True)()
 
     @classmethod
@@ -421,7 +423,7 @@ class DjangoORMDataLayer(BaseDataLayer):
 
             relation_attr_name = relationship_info.model_field_name or relationship_name
             try:
-                field = current_model._meta.get_field(relation_attr_name)
+                field = current_model._meta.get_field(relation_attr_name)  # ty: ignore[unresolved-attribute]
             except FieldDoesNotExist:
                 return False
 
@@ -438,7 +440,7 @@ class DjangoORMDataLayer(BaseDataLayer):
         if data_payload.relationships is None:
             return
 
-        relationships_data = data_payload.relationships.model_dump(exclude_none=True)
+        relationships_data = data_payload.relationships.model_dump(exclude_none=True)  # ty: ignore[unresolved-attribute]
         for relation_name, rel_payload in relationships_data.items():
             if "data" not in rel_payload:
                 continue
@@ -484,7 +486,7 @@ class DjangoORMDataLayer(BaseDataLayer):
     async def before_get_collection(self, qs, view_kwargs):
         return None
 
-    async def after_get_collection(self, objs, qs, view_kwargs):
+    async def after_get_collection(self, collection, qs, view_kwargs):
         return None
 
     async def before_update_object(self, obj, data, view_kwargs):

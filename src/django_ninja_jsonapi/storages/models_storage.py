@@ -87,7 +87,7 @@ class ModelsStorage:
         field_name: str,
     ) -> Type[TypeModel]:
         try:
-            field = model._meta.get_field(field_name)
+            field = model._meta.get_field(field_name)  # ty: ignore[unresolved-attribute]
         except FieldDoesNotExist as ex:
             raise BadRequest(
                 detail=f"There is no related model for resource_type {resource_type!r} by relation {field_name!r}.",

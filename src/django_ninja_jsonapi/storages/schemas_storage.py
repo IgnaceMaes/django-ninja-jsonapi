@@ -182,7 +182,7 @@ class SchemasStorage:
         self,
         source_schema: Type[TypeSchema],
         resource_type: str,
-        jsonapi_object_schema: Type[TypeSchema],
+        jsonapi_object_schema: JSONAPIObjectSchemas,
     ):
         self._jsonapi_object_schemas[(source_schema, resource_type)] = jsonapi_object_schema
 

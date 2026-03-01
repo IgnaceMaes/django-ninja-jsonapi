@@ -136,7 +136,7 @@ def jsonapi_paginate(
         is_queryset = False
 
     if is_queryset:
-        count = items.count()  # QuerySet.count() — avoids loading all rows
+        count = items.count()  # ty: ignore[missing-argument] # QuerySet.count() — avoids loading all rows
     else:
         count = len(items)
 

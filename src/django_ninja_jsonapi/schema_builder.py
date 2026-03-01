@@ -66,10 +66,10 @@ class SchemaBuilder:
                 self._resource_type,
                 schema.__name__,
             )
-        schema_in_post = schema_in_post or schema
+        schema_in_post_resolved: Type[BaseModel] = schema_in_post or schema
         schema_name_in_post_suffix = ""
 
-        if any(schema_in_post is cmp_schema for cmp_schema in [schema, schema_in_patch]):
+        if any(schema_in_post_resolved is cmp_schema for cmp_schema in [schema, schema_in_patch]):
             schema_name_in_post_suffix = "InPost"
 
         schema_in_patch_is_defaulted = schema_in_patch is None
@@ -81,22 +81,22 @@ class SchemaBuilder:
                 self._resource_type,
                 schema.__name__,
             )
-        schema_in_patch = schema_in_patch or schema
+        schema_in_patch_resolved: Type[BaseModel] = schema_in_patch or schema
         schema_name_in_patch_suffix = ""
 
-        if any(schema_in_patch is cmp_schema for cmp_schema in [schema, schema_in_post]):
+        if any(schema_in_patch_resolved is cmp_schema for cmp_schema in [schema, schema_in_post_resolved]):
             schema_name_in_patch_suffix = "InPatch"
 
-        schema_in_post, schema_in_post_data = self.build_schema_in(
-            schema_in=schema_in_post,
+        built_schema_in_post, schema_in_post_data = self.build_schema_in(
+            schema_in=schema_in_post_resolved,
             schema=schema,
             operation_type="create",
             schema_name_suffix=schema_name_in_post_suffix,
             non_optional_relationships=True,
         )
 
-        schema_in_patch, schema_in_patch_data = self.build_schema_in(
-            schema_in=schema_in_patch,
+        built_schema_in_patch, schema_in_patch_data = self.build_schema_in(
+            schema_in=schema_in_patch_resolved,
             schema=schema,
             operation_type="update",
             schema_name_suffix=schema_name_in_patch_suffix,
@@ -104,9 +104,9 @@ class SchemaBuilder:
         )
 
         return BuiltSchemasDTO(
-            schema_in_post=schema_in_post,
+            schema_in_post=built_schema_in_post,
             schema_in_post_data=schema_in_post_data,
-            schema_in_patch=schema_in_patch,
+            schema_in_patch=built_schema_in_patch,
             schema_in_patch_data=schema_in_patch_data,
             list_response_schema=self._create_schemas_objects_list(schema),
             detail_response_schema=self._create_schemas_object_detail(schema),
@@ -208,9 +208,9 @@ class SchemaBuilder:
                 validators.append(val)
 
         if validators:
-            annotation = Annotated.__class_getitem__((annotation, *validators))
+            annotation = Annotated.__class_getitem__((annotation, *validators))  # ty: ignore[unresolved-attribute]
 
-        return annotation
+        return annotation  # ty: ignore[invalid-return-type]
 
     def get_info_from_schema_for_building(
         self,
@@ -256,7 +256,7 @@ class SchemaBuilder:
                 relationships_schema_fields[name] = (relationship_schema, relationship_field)
                 # works both for to-one and to-many
                 if related_schema := get_schema_from_field_annotation(field):
-                    included_schemas.append((name, related_schema, relationship_info.resource_type))
+                    included_schemas.append((name, related_schema, relationship_info.resource_type))  # ty: ignore[invalid-argument-type]
             elif name == "id":
                 id_validators, _ = extract_validators(
                     model=schema,
@@ -283,7 +283,7 @@ class SchemaBuilder:
         )
 
         field_validators, model_validators = extract_validators(schema, exclude_for_field_names={"id"})
-        attributes_schema = create_model(
+        attributes_schema = create_model(  # ty: ignore[no-matching-overload]
             f"{base_name}AttributesJSONAPI",
             **attributes_schema_fields,
             __config__=model_config,
@@ -315,7 +315,7 @@ class SchemaBuilder:
             relationships_schema=relationships_schema,
             relationships_info=relationships_info,
             has_required_relationship=has_required_relationship,
-            included_schemas=included_schemas,
+            included_schemas=included_schemas,  # ty: ignore[invalid-argument-type]
             field_schemas=field_schemas,
             model_validators=model_validators,
             meta_fields=meta_fields,
@@ -375,10 +375,10 @@ class SchemaBuilder:
         )
         base = BaseJSONAPIRelationshipDataToOneSchema
         if relationship_info.many:
-            relationship_schema = list[relationship_schema]
+            relationship_schema = list[relationship_schema]  # ty: ignore[invalid-type-form]
             base = BaseJSONAPIRelationshipDataToManySchema
         elif not field.is_required():
-            relationship_schema = Optional[relationship_schema]
+            relationship_schema = Optional[relationship_schema]  # ty: ignore[invalid-type-form]
 
         relationship_data_schema = create_model(
             f"{schema_name}RelationshipDataJSONAPI",
@@ -404,7 +404,7 @@ class SchemaBuilder:
         base_name: str,
         resource_type: str,
         dto: SchemasInfoDTO,
-        model_base: Type[JSONAPIObjectSchemaType] = JSONAPIObjectSchema,
+        model_base: Type[JSONAPIObjectSchemaType] = JSONAPIObjectSchema,  # ty: ignore[invalid-parameter-default]
         with_relationships: bool = True,
         id_field_required: bool = False,
     ) -> Type[JSONAPIObjectSchemaType]:
@@ -429,7 +429,7 @@ class SchemaBuilder:
 
         if with_relationships:
             object_jsonapi_schema_fields.update(
-                relationships=(Optional[dto.relationships_schema], ... if dto.has_required_relationship else None),
+                relationships=(Optional[dto.relationships_schema], ... if dto.has_required_relationship else None),  # ty: ignore[invalid-type-form]
             )
 
         object_jsonapi_schema = create_model(
@@ -443,7 +443,7 @@ class SchemaBuilder:
 
     def find_all_included_schemas(
         self,
-        included_schemas: list[tuple[str, BaseModel, str]],
+        included_schemas: list[tuple[str, Type[BaseModel], str]],
     ) -> dict[str, Type[JSONAPIObjectSchema]]:
         return {
             name: self.create_jsonapi_object_schemas(
@@ -503,7 +503,7 @@ class SchemaBuilder:
 
         can_be_included_schemas = {}
         if compute_included_schemas:
-            can_be_included_schemas = self.find_all_included_schemas(included_schemas=dto.included_schemas)
+            can_be_included_schemas = self.find_all_included_schemas(included_schemas=dto.included_schemas)  # ty: ignore[invalid-argument-type]
 
         result = JSONAPIObjectSchemas(
             attributes_schema=dto.attributes_schema,
@@ -524,10 +524,10 @@ class SchemaBuilder:
         object_jsonapi_schema: Type[JSONAPIObjectSchema],
         includes_schemas: list[Type[JSONAPIObjectSchema]],
     ) -> Type[JSONAPIResultListSchema]:
-        return self.build_schema_for_result(
+        return self.build_schema_for_result(  # ty: ignore[invalid-return-type]
             name=f"{name}JSONAPI",
             base=JSONAPIResultListSchema,
-            data_type=list[object_jsonapi_schema],
+            data_type=list[object_jsonapi_schema],  # ty: ignore[invalid-type-form]
             includes_schemas=includes_schemas,
         )
 
@@ -537,7 +537,7 @@ class SchemaBuilder:
         object_jsonapi_schema: Type[JSONAPIObjectSchema],
         includes_schemas: list[Type[JSONAPIObjectSchema]],
     ) -> Type[JSONAPIResultDetailSchema]:
-        return self.build_schema_for_result(
+        return self.build_schema_for_result(  # ty: ignore[invalid-return-type]
             name=f"{name}JSONAPI",
             base=JSONAPIResultDetailSchema,
             data_type=object_jsonapi_schema,
@@ -554,7 +554,7 @@ class SchemaBuilder:
     ) -> Union[Type[JSONAPIResultListSchema], Type[JSONAPIResultDetailSchema]]:
         included_schema_annotation = Union[JSONAPIObjectSchema]
         for includes_schema in includes_schemas:
-            included_schema_annotation = Union[included_schema_annotation, includes_schema]
+            included_schema_annotation = Union[included_schema_annotation, includes_schema]  # ty: ignore[invalid-type-form]
 
         schema_fields = {
             "data": (data_type, ...),
@@ -567,7 +567,7 @@ class SchemaBuilder:
                 ),
             )
 
-        return create_model(
+        return create_model(  # ty: ignore[no-matching-overload]
             name,
             **schema_fields,
             __base__=base,
