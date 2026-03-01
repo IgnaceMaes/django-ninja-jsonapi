@@ -64,6 +64,3 @@ def _extract_request(*, args: tuple[Any, ...], kwargs: dict[str, Any]) -> HttpRe
 
     msg = "jsonapi_resource decorator could not locate request argument"
     raise ValueError(msg)
-
-
-
