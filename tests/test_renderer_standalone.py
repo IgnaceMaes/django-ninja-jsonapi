@@ -111,6 +111,21 @@ def test_jsonapi_resource_decorator_sets_request_metadata_for_sync_functions():
 
     config = getattr(request, REQUEST_JSONAPI_CONFIG_ATTR)
     assert config.resource_type == "articles"
+    # Default: respects INCLUDE_JSONAPI_OBJECT setting (defaults to False)
+    assert config.include_jsonapi_object is False
+
+
+def test_jsonapi_resource_decorator_explicit_include_jsonapi_object():
+    request = RequestFactory().get("/articles/1/")
+
+    @jsonapi_resource("articles", include_jsonapi_object=True)
+    def endpoint(request, article_id: int):
+        return {"id": article_id, "title": "Hello"}
+
+    _ = endpoint(request, 1)
+
+    config = getattr(request, REQUEST_JSONAPI_CONFIG_ATTR)
+    assert config.include_jsonapi_object is True
 
 
 @pytest.mark.asyncio

@@ -24,7 +24,7 @@ This replaces the manual steps of setting `api.renderer = JSONAPIRenderer()` and
 from ninja import NinjaAPI
 from pydantic import BaseModel
 
-from django_ninja_jsonapi import JSONAPIRenderer, jsonapi_resource
+from django_ninja_jsonapi import jsonapi_resource, setup_jsonapi
 
 
 class ArticleSchema(BaseModel):
@@ -32,7 +32,8 @@ class ArticleSchema(BaseModel):
     title: str
 
 
-api = NinjaAPI(renderer=JSONAPIRenderer())
+api = NinjaAPI()
+setup_jsonapi(api)
 
 
 @api.get("/articles/{article_id}", response=ArticleSchema)
@@ -41,7 +42,7 @@ def get_article(request, article_id: int):
     return {"id": article_id, "title": "Hello"}
 ```
 
-Response shape:
+Response shape (with `INCLUDE_JSONAPI_OBJECT=True`):
 
 ```json
 {
@@ -57,12 +58,11 @@ Response shape:
   },
   "links": {
     "self": "http://testserver/articles/1/"
-  },
-  "jsonapi": {
-    "version": "1.0"
   }
 }
 ```
+
+When `INCLUDE_JSONAPI_OBJECT` is `True` (or `include_jsonapi_object=True` on the decorator), a `"jsonapi": {"version": "1.0"}` key is also included.
 
 ## Returning Pydantic models
 
@@ -104,6 +104,21 @@ def get_article(request, article_id: int):
 ```
 
 Relationship fields are emitted under `data.relationships`, and relationship links are generated automatically.
+
+**Tip:** When multiple endpoints share the same resource type, extract relationships into a constant:
+
+```python
+ARTICLE_RELATIONSHIPS = {
+    "author": {"resource_type": "people", "many": False},
+    "comments": {"resource_type": "comments", "many": True},
+}
+
+
+@api.get("/articles/{article_id}", response=jsonapi_response(ArticleSchema, "articles", relationships=ARTICLE_RELATIONSHIPS))
+@jsonapi_resource("articles", relationships=ARTICLE_RELATIONSHIPS)
+def get_article(request, article_id: int):
+    ...
+```
 
 ## Included, meta, links
 

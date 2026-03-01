@@ -246,3 +246,25 @@ class TestJsonapiPaginate:
         page = jsonapi_paginate(request, items)
 
         assert len(page) == 7
+
+    def test_invalid_page_size_falls_back_to_default(self):
+        request = RequestFactory().get("/articles/?page[size]=abc")
+        items = list(range(50))
+        page = jsonapi_paginate(request, items, page_size=10)
+
+        assert len(page) == 10
+
+    def test_negative_page_size_falls_back_to_default(self):
+        request = RequestFactory().get("/articles/?page[size]=-5")
+        items = list(range(50))
+        page = jsonapi_paginate(request, items, page_size=10)
+
+        assert len(page) == 10
+
+    def test_invalid_page_number_falls_back_to_one(self):
+        request = RequestFactory().get("/articles/?page[number]=xyz")
+        items = list(range(50))
+        page = jsonapi_paginate(request, items, page_size=10)
+
+        # Should return first page
+        assert page == list(range(10))

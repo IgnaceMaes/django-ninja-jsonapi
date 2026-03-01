@@ -91,8 +91,8 @@ def jsonapi_paginate(
         request: The current HTTP request.
         items: A Django ``QuerySet`` or any sliceable sequence.
         page_size: Default page size when the client doesn't send
-            ``page[size]``.  Falls back to ``NINJA_JSONAPI["MAX_PAGE_SIZE"]``
-            (default 20).
+            ``page[size]``.  Falls back to
+            ``NINJA_JSONAPI["DEFAULT_PAGE_SIZE"]`` (default 20).
         max_page_size: Upper bound for client-requested ``page[size]``.
             Falls back to ``NINJA_JSONAPI["MAX_PAGE_SIZE"]`` (default 100).
 
@@ -107,7 +107,12 @@ def jsonapi_paginate(
 
     requested = request.GET.get("page[size]")
     if requested is not None:
-        effective_size = int(requested)
+        try:
+            effective_size = int(requested)
+        except (ValueError, TypeError):
+            effective_size = default_size
+        if effective_size < 1:
+            effective_size = default_size
     else:
         effective_size = default_size
 
@@ -115,7 +120,10 @@ def jsonapi_paginate(
         effective_size = effective_max
 
     # ---- resolve page number ----
-    page_number = int(request.GET.get("page[number]", 1))
+    try:
+        page_number = int(request.GET.get("page[number]", 1))
+    except (ValueError, TypeError):
+        page_number = 1
     if page_number < 1:
         page_number = 1
 

@@ -2,12 +2,12 @@ from ninja import NinjaAPI
 from pydantic import BaseModel
 
 from django_ninja_jsonapi import (
-    JSONAPIRenderer,
     jsonapi_include,
     jsonapi_meta,
     jsonapi_paginate,
     jsonapi_resource,
     jsonapi_response,
+    setup_jsonapi,
 )
 
 from .models import Customer
@@ -19,11 +19,15 @@ class CustomerStandaloneSchema(BaseModel):
     email: str
 
 
+CUSTOMER_RELATIONSHIPS = {
+    "computers": {"resource_type": "computer", "many": True},
+}
+
 api = NinjaAPI(
     title="django-ninja-jsonapi standalone renderer example",
     urls_namespace="api-standalone",
-    renderer=JSONAPIRenderer(),
 )
+setup_jsonapi(api)
 
 
 @api.get(
@@ -38,19 +42,10 @@ def list_customers(request):
 
 @api.get(
     "/customers/{customer_id}",
-    response=jsonapi_response(
-        CustomerStandaloneSchema,
-        "customer",
-        relationships={"computers": {"resource_type": "computer", "many": True}},
-    ),
+    response=jsonapi_response(CustomerStandaloneSchema, "customer", relationships=CUSTOMER_RELATIONSHIPS),
     tags=["standalone-customers"],
 )
-@jsonapi_resource(
-    "customer",
-    relationships={
-        "computers": {"resource_type": "computer", "many": True},
-    },
-)
+@jsonapi_resource("customer", relationships=CUSTOMER_RELATIONSHIPS)
 def get_customer(request, customer_id: int):
     customer = Customer.objects.get(id=customer_id)
     computers = [{"id": computer.id, "serial": computer.serial} for computer in customer.computers.order_by("id")]
