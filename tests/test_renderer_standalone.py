@@ -2,6 +2,7 @@ import json
 
 import pytest
 from django.test import RequestFactory
+from pydantic import BaseModel
 
 from django_ninja_jsonapi.decorators import jsonapi_resource
 from django_ninja_jsonapi.renderers import (
@@ -128,3 +129,48 @@ async def test_jsonapi_resource_decorator_sets_request_metadata_for_async_functi
     config = getattr(request, REQUEST_JSONAPI_CONFIG_ATTR)
     assert config.resource_type == "articles"
     assert config.relationships["author"].resource_type == "people"
+
+
+# ---------------------------------------------------------------------------
+# Auto-serialization: Pydantic models
+# ---------------------------------------------------------------------------
+
+
+class ArticlePydantic(BaseModel):
+    id: int
+    title: str
+
+
+def test_renderer_accepts_pydantic_model_instance():
+    request = RequestFactory().get("/articles/1/")
+    setattr(request, REQUEST_JSONAPI_CONFIG_ATTR, JSONAPIResourceConfig(resource_type="articles"))
+
+    article = ArticlePydantic(id=1, title="From Pydantic")
+    result = _render_payload(request, article)
+
+    assert result["data"]["id"] == "1"
+    assert result["data"]["type"] == "articles"
+    assert result["data"]["attributes"] == {"title": "From Pydantic"}
+
+
+def test_renderer_accepts_list_of_pydantic_models():
+    request = RequestFactory().get("/articles/")
+    setattr(request, REQUEST_JSONAPI_CONFIG_ATTR, JSONAPIResourceConfig(resource_type="articles"))
+
+    articles = [
+        ArticlePydantic(id=1, title="First"),
+        ArticlePydantic(id=2, title="Second"),
+    ]
+    result = _render_payload(request, articles)
+
+    assert len(result["data"]) == 2
+    assert result["data"][0]["attributes"]["title"] == "First"
+    assert result["data"][1]["attributes"]["title"] == "Second"
+
+
+def test_renderer_rejects_unsupported_types():
+    request = RequestFactory().get("/articles/1/")
+    setattr(request, REQUEST_JSONAPI_CONFIG_ATTR, JSONAPIResourceConfig(resource_type="articles"))
+
+    with pytest.raises(TypeError, match="JSON:API renderer expects"):
+        _render_payload(request, "not a dict or model")

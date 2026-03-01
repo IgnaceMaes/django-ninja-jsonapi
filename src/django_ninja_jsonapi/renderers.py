@@ -132,9 +132,7 @@ class JSONAPIRenderer(JSONRenderer):
         if item is None:
             return None
 
-        if not isinstance(item, dict):
-            msg = "JSON:API renderer expects endpoint response to be a dict or a list of dict objects"
-            raise TypeError(msg)
+        item = self._coerce_to_dict(item)
 
         item_id_value = item.get(resource_config.id_field)
         if item_id_value is None:
@@ -267,6 +265,40 @@ class JSONAPIRenderer(JSONRenderer):
             item_path = request_path if request_path.endswith("/") else f"{request_path}/"
 
         return request.build_absolute_uri(item_path)
+
+    @staticmethod
+    def _coerce_to_dict(item: Any) -> dict[str, Any]:
+        if isinstance(item, dict):
+            return item
+
+        try:
+            from pydantic import BaseModel as PydanticBaseModel
+
+            if isinstance(item, PydanticBaseModel):
+                return item.model_dump()
+        except ImportError:  # pragma: no cover
+            pass
+
+        try:
+            from django.db import models as django_models
+
+            if isinstance(item, django_models.Model):
+                data: dict[str, Any] = {}
+                for field in item._meta.get_fields():
+                    if not hasattr(field, "attname"):
+                        continue
+                    data[field.attname if field.attname != field.name + "_id" else field.name] = getattr(
+                        item, field.attname, None
+                    )
+                return data
+        except ImportError:  # pragma: no cover
+            pass
+
+        msg = (
+            "JSON:API renderer expects endpoint response to be a dict, list of dicts, "
+            "Pydantic BaseModel, or Django Model instance"
+        )
+        raise TypeError(msg)
 
     @staticmethod
     def _is_jsonapi_document(data: Any) -> bool:
