@@ -12,7 +12,8 @@ from django_ninja_jsonapi.common import get_relationship_info_from_field_metadat
 from django_ninja_jsonapi.data_layers.base import BaseDataLayer
 from django_ninja_jsonapi.data_typing import TypeModel, TypeSchema
 from django_ninja_jsonapi.exceptions import BadRequest, InvalidInclude
-from django_ninja_jsonapi.inflection import format_keys, get_formatter as get_inflection_formatter
+from django_ninja_jsonapi.inflection import format_keys
+from django_ninja_jsonapi.inflection import get_formatter as get_inflection_formatter
 from django_ninja_jsonapi.querystring import QueryStringManager
 from django_ninja_jsonapi.schema import BaseJSONAPIItemInSchema
 from django_ninja_jsonapi.schema_base import BaseModel

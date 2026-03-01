@@ -5,7 +5,8 @@ from typing import Any, Optional
 
 from ninja.renderers import JSONRenderer
 
-from django_ninja_jsonapi.inflection import format_keys, get_formatter as get_inflection_formatter
+from django_ninja_jsonapi.inflection import format_keys
+from django_ninja_jsonapi.inflection import get_formatter as get_inflection_formatter
 
 JSONAPI_MEDIA_TYPE = "application/vnd.api+json"
 

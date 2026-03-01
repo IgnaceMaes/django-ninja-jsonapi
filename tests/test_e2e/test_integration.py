@@ -11,7 +11,6 @@ from asgiref.sync import sync_to_async
 from django.test import AsyncClient
 
 from django_ninja_jsonapi.renderers import JSONAPI_MEDIA_TYPE
-
 from tests.testapp.models import Computer, Customer
 
 pytestmark = [

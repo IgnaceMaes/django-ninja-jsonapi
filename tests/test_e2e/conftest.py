@@ -20,9 +20,7 @@ from pydantic import BaseModel
 from django_ninja_jsonapi.api.application_builder import ApplicationBuilder
 from django_ninja_jsonapi.generics import ViewBaseGeneric
 from django_ninja_jsonapi.types_metadata import RelationshipInfo
-
 from tests.testapp.models import Computer, Customer, Tag
-
 
 # ---------------------------------------------------------------------------
 # Pydantic schemas
