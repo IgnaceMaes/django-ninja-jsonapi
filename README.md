@@ -12,42 +12,19 @@ This project ports the core ideas of `fastapi-jsonapi` to a Django Ninja + Djang
 
 Full documentation is available at [ignacemaes.com/django-ninja-jsonapi](https://ignacemaes.com/django-ninja-jsonapi/).
 
-## Two ways to use the library
+## Status
 
-`django-ninja-jsonapi` offers two APIs that can be used independently or together:
-
-| | **ApplicationBuilder** | **Standalone Renderer** |
-|---|---|---|
-| **Use case** | Full auto-generated CRUD | Manual endpoint control |
-| **Routes** | Generated from model + schema | You define each `@api.get` / `@api.post` |
-| **Data layer** | Built-in Django ORM layer | Bring your own queries |
-| **Best for** | Rapid resource APIs | Custom logic, gradual adoption |
-
-### ApplicationBuilder
-
-Auto-generates CRUD routes, relationship endpoints, filtering, sorting, pagination, and includes from a model + schema pair.
-
-```mermaid
-graph LR
-    A[Define Model + Schema] --> B[Create ViewBaseGeneric]
-    B --> C[Register with ApplicationBuilder]
-    C --> D[builder.initialize]
-    D --> E[GET / POST / PATCH / DELETE]
-    D --> F[Relationship routes]
-    D --> G[Filtering / Sorting / Pagination]
-```
-
-### Standalone Renderer
-
-Lets you write normal Django Ninja endpoints while the renderer handles JSON:API serialization (`data`, `attributes`, `relationships`, `links`).
-
-```mermaid
-graph LR
-    A[Create NinjaAPI] --> B["setup_jsonapi(api)"]
-    B --> C["Decorate with @jsonapi_resource"]
-    C --> D[Return dict / Pydantic / Model]
-    D --> E[JSON:API response]
-```
+- Working baseline for resource registration and route generation (`GET`, `GET LIST`, `POST`, `PATCH`, `DELETE`).
+- Strict query parsing for JSON:API-style `filter`, `sort`, `include`, `fields`, and `page` parameters.
+- JSON:API exception payload handling.
+- Atomic operations endpoint wiring (`/operations`).
+- Django ORM data-layer baseline for CRUD + basic relationship handling.
+- Top-level/resource/relationship `links` in responses.
+- Django ORM include optimization (`select_related`/`prefetch_related` split) with optional include mapping overrides.
+- Logical filter groups (`and`/`or`/`not`) and cursor pagination (`page[cursor]`).
+- Content-type negotiation (415/406) per the JSON:API spec.
+- Attribute key inflection (`dasherize` or `camelize`).
+- Auto-generated relationship mutation routes (`POST`/`PATCH`/`DELETE` on to-many, `PATCH` on to-one).
 
 ## Requirements
 
@@ -67,7 +44,7 @@ or
 - `poetry add django-ninja-jsonapi`
 - `pdm add django-ninja-jsonapi`
 
-## Quick start — ApplicationBuilder
+## Quick start
 
 ### 1) Define a Django model and a schema
 
@@ -127,59 +104,91 @@ urlpatterns = [
 ]
 ```
 
-This generates `GET`, `POST`, `PATCH`, `DELETE` endpoints plus relationship routes — all with JSON:API query support (filtering, sorting, pagination, includes, sparse fieldsets).
-
-## Quick start — Standalone Renderer
-
-### 1) Set up the API
-
-```python
-from ninja import NinjaAPI
-from pydantic import BaseModel
-
-from django_ninja_jsonapi import jsonapi_resource, setup_jsonapi
-
-api = NinjaAPI()
-setup_jsonapi(api)
-```
-
-### 2) Define an endpoint
-
-```python
-class ArticleSchema(BaseModel):
-    id: int
-    title: str
-
-
-@api.get("/articles/{article_id}", response=ArticleSchema)
-@jsonapi_resource("articles")
-def get_article(request, article_id: int):
-    return {"id": article_id, "title": "Hello"}
-```
-
-You write the endpoint logic; the renderer wraps it in a JSON:API envelope. Use `jsonapi_include`, `jsonapi_meta`, and `jsonapi_links` helpers for sideloading, metadata, and link objects. See the [standalone renderer docs](https://ignacemaes.com/django-ninja-jsonapi/standalone_renderer/) for pagination, relationships, OpenAPI schemas, request body parsing, and a full CRUD example.
-
 ### Example response
 
-`GET /api/articles/1/`
+`GET /api/customers/1/`
 
 ```json
 {
   "data": {
-    "type": "articles",
+    "type": "customer",
     "id": "1",
     "attributes": {
-      "title": "Hello"
+      "name": "Alice"
     },
     "links": {
-      "self": "http://localhost:8000/api/articles/1/"
+      "self": "http://localhost:8000/api/customers/1/"
     }
+  },
+  "meta": {
+    "count": 1
+  }
+}
+```
+
+`GET /api/customers/`
+
+```json
+{
+  "data": [
+    {
+      "type": "customer",
+      "id": "1",
+      "attributes": { "name": "Alice" },
+      "links": { "self": "http://localhost:8000/api/customers/1/" }
+    },
+    {
+      "type": "customer",
+      "id": "2",
+      "attributes": { "name": "Bob" },
+      "links": { "self": "http://localhost:8000/api/customers/2/" }
+    }
+  ],
+  "meta": {
+    "count": 2
   }
 }
 ```
 
 Resources have a `type` and `id` at the top level while model fields are nested under `attributes`.
 Relationships, includes, sparse fieldsets, filtering, sorting and pagination all follow the [JSON:API specification](https://jsonapi.org/format/).
+
+## Architecture
+
+The library provides two APIs. Both produce spec-compliant JSON:API responses through `JSONAPIRenderer`.
+
+### ApplicationBuilder — request flow
+
+`ApplicationBuilder` auto-generates CRUD routes from a model + schema pair. Incoming requests flow through the full pipeline:
+
+```mermaid
+flowchart LR
+    Client -->|HTTP request| NinjaAPI
+    NinjaAPI --> ContentNegotiation
+    ContentNegotiation --> ViewBase["ViewBase\n(generated endpoint)"]
+    ViewBase --> QSM["QueryStringManager\n(parse filter / sort /\ninclude / fields / page)"]
+    QSM --> DataLayer["DjangoORMDataLayer\n(apply filters, sorts,\nselect_related,\nprefetch_related)"]
+    DataLayer --> DB[(Django ORM)]
+    DB --> DataLayer
+    DataLayer --> ViewBase
+    ViewBase -->|"build response\n(relationships, links, meta)"| JSONAPIRenderer
+    JSONAPIRenderer -->|"application/vnd.api+json"| Client
+```
+
+### Standalone renderer — request flow
+
+With `setup_jsonapi(api)` you write plain Django Ninja endpoints; the `@jsonapi_resource` decorator attaches config to the request and `JSONAPIRenderer` wraps the return value into a JSON:API document.
+
+```mermaid
+flowchart LR
+    Client -->|HTTP request| NinjaAPI
+    NinjaAPI --> Decorator["@jsonapi_resource\n(attach resource config\nto request)"]
+    Decorator --> Endpoint["User endpoint\n(custom query logic)"]
+    Endpoint -->|"dict / Pydantic / Model"| JSONAPIRenderer
+    JSONAPIRenderer -->|"application/vnd.api+json"| Client
+```
+
+For full standalone usage (pagination, relationships, OpenAPI schemas, request body parsing, CRUD example), see the [standalone renderer docs](https://ignacemaes.com/django-ninja-jsonapi/standalone_renderer/).
 
 ## Configuration
 
