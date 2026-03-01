@@ -132,6 +132,135 @@ def test_include_router_kwargs_requires_router_argument():
         )
 
 
+def test_to_many_relationship_registers_mutation_routes():
+    """POST, PATCH, DELETE mutation routes are auto-registered for to-many relationships."""
+
+    class ComputerSchema(BaseModel):
+        id: int
+        serial: str
+
+    class CustomerSchema(BaseModel):
+        id: int
+        name: str
+        computers: Annotated[list[ComputerSchema], RelationshipInfo(resource_type="computer", many=True)] = []
+
+    api = NinjaAPI()
+    builder = ApplicationBuilder(api)
+
+    builder.add_resource(
+        path="/customers",
+        tags=["customers"],
+        resource_type="customer",
+        view=DummyView,
+        model=DummyModel,
+        schema=CustomerSchema,
+    )
+    builder.add_resource(
+        path="/computers",
+        tags=["computers"],
+        resource_type="computer",
+        view=DummyView,
+        model=DummyModel,
+        schema=ComputerSchema,
+    )
+
+    builder.initialize()
+
+    path_methods = _collect_path_methods(api)
+    rel_path = "/customers/{obj_id}/relationships/computers/"
+    assert rel_path in path_methods
+    assert {"GET", "POST", "PATCH", "DELETE"} == path_methods[rel_path]
+
+
+def test_to_one_relationship_registers_only_patch_mutation():
+    """Only PATCH mutation route is auto-registered for to-one relationships."""
+
+    class AddressSchema(BaseModel):
+        id: int
+        street: str
+
+    class PersonSchema(BaseModel):
+        id: int
+        name: str
+        address: Annotated[AddressSchema, RelationshipInfo(resource_type="address", many=False)]
+
+    api = NinjaAPI()
+    builder = ApplicationBuilder(api)
+
+    builder.add_resource(
+        path="/people",
+        tags=["people"],
+        resource_type="person",
+        view=DummyView,
+        model=DummyModel,
+        schema=PersonSchema,
+    )
+    builder.add_resource(
+        path="/addresses",
+        tags=["addresses"],
+        resource_type="address",
+        view=DummyView,
+        model=DummyModel,
+        schema=AddressSchema,
+    )
+
+    builder.initialize()
+
+    path_methods = _collect_path_methods(api)
+    rel_path = "/people/{obj_id}/relationships/address/"
+    assert rel_path in path_methods
+    # to-one: GET + PATCH only (no POST, no DELETE)
+    assert {"GET", "PATCH"} == path_methods[rel_path]
+
+
+def test_relationship_mutation_operation_ids():
+    """Verify that mutation endpoints get correct operation IDs."""
+
+    class TagSchema(BaseModel):
+        id: int
+        label: str
+
+    class ArticleSchema(BaseModel):
+        id: int
+        title: str
+        tags: Annotated[list[TagSchema], RelationshipInfo(resource_type="tag", many=True)] = []
+
+    api = NinjaAPI()
+    builder = ApplicationBuilder(api)
+
+    builder.add_resource(
+        path="/articles",
+        tags=["articles"],
+        resource_type="article",
+        view=DummyView,
+        model=DummyModel,
+        schema=ArticleSchema,
+    )
+    builder.add_resource(
+        path="/tags",
+        tags=["tags"],
+        resource_type="tag",
+        view=DummyView,
+        model=DummyModel,
+        schema=TagSchema,
+    )
+
+    builder.initialize()
+
+    operation_ids = set()
+    for _, router in api._routers:
+        path_view = router.path_operations.get("/articles/{obj_id}/relationships/tags/")
+        if path_view:
+            for op in path_view.operations:
+                if hasattr(op, "operation_id"):
+                    operation_ids.add(op.operation_id)
+
+    assert "article_tags_get_list" in operation_ids
+    assert "article_tags_create" in operation_ids
+    assert "article_tags_update" in operation_ids
+    assert "article_tags_delete" in operation_ids
+
+
 def test_relationship_endpoint_uses_related_resource_builder_context():
     class ComputerSchema(BaseModel):
         id: int

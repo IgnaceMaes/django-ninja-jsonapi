@@ -1,5 +1,7 @@
 SECRET_KEY = "test-key"
-INSTALLED_APPS = []
+INSTALLED_APPS = [
+    "tests.testapp",
+]
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",

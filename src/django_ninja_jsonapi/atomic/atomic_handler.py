@@ -40,21 +40,15 @@ def catch_exc_on_operation_handle(func: Callable[..., Awaitable]):
                 operation.ref,
                 operation.data,
             )
-            errors_details = {
-                "message": f"Validation error on operation {operation.op_type}",
-                "ref": operation.ref,
-                "data": operation.data.model_dump() if hasattr(operation.data, "model_dump") else operation.data,
-            }
             if isinstance(ex, ValidationError):
-                errors_details.update(errors=ex.errors())
-            elif isinstance(ex, ValueError):
-                errors_details.update(error=f"{ex}")
+                detail = f"Validation error on operation {operation.op_type}: {ex.error_count()} error(s)"
             else:
-                raise
-            # TODO: json:api exception
+                detail = f"Validation error on operation {operation.op_type}: {ex}"
+
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-                detail=errors_details,
+                detail=detail,
+                pointer=f"/atomic:operations/{operation.op_type}",
             ) from ex
 
     return wrapper

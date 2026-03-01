@@ -45,22 +45,60 @@ Relationship metadata drives:
 
 ## Typical endpoints and calls
 
-- `GET /customers/{id}/computers`
-- `GET /customers/{id}/relationships/computers`
-- `POST/PATCH/DELETE /customers/{id}/relationships/computers`
+`ApplicationBuilder` auto-generates all relationship endpoints based on `RelationshipInfo` metadata:
+
+| Method   | URL pattern                                        | To-one | To-many |
+| -------- | -------------------------------------------------- | :----: | :-----: |
+| `GET`    | `/{id}/relationships/{relationship}`               | ✓      | ✓       |
+| `POST`   | `/{id}/relationships/{relationship}`               |        | ✓       |
+| `PATCH`  | `/{id}/relationships/{relationship}`               | ✓      | ✓       |
+| `DELETE` | `/{id}/relationships/{relationship}`               |        | ✓       |
+| `GET`    | `/{id}/{relationship}`                             | ✓      | ✓       |
+
+To-one relationships only receive `PATCH` (replace), while to-many relationships additionally receive `POST` (add members) and `DELETE` (remove members).
+
+### Read a relationship
 
 ```http
 GET /customers/1/relationships/computers
 ```
 
+### Replace a relationship (PATCH)
+
 ```http
 PATCH /customers/1/relationships/computers
-Content-Type: application/json
+Content-Type: application/vnd.api+json
 
 {
 	"data": [
 		{"type": "computer", "id": "10"},
 		{"type": "computer", "id": "11"}
+	]
+}
+```
+
+### Add to a to-many relationship (POST)
+
+```http
+POST /customers/1/relationships/computers
+Content-Type: application/vnd.api+json
+
+{
+	"data": [
+		{"type": "computer", "id": "12"}
+	]
+}
+```
+
+### Remove from a to-many relationship (DELETE)
+
+```http
+DELETE /customers/1/relationships/computers
+Content-Type: application/vnd.api+json
+
+{
+	"data": [
+		{"type": "computer", "id": "10"}
 	]
 }
 ```

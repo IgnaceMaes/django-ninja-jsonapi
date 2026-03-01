@@ -10,6 +10,7 @@ from pydantic import BaseModel as PydanticBaseModel
 from pydantic.fields import FieldInfo
 
 from django_ninja_jsonapi.common import get_relationship_info_from_field_metadata, search_client_can_set_id
+from django_ninja_jsonapi.inflection import get_formatter as get_inflection_formatter
 from django_ninja_jsonapi.schema import (
     BaseJSONAPIDataInSchema,
     BaseJSONAPIItemInSchema,
@@ -43,16 +44,11 @@ class SchemaBuilder:
         self._resource_type = resource_type
 
     def _create_schemas_objects_list(self, schema: Type[BaseModel]) -> Type[JSONAPIResultListSchema]:
-        object_jsonapi_list_schema, list_jsonapi_schema = self.build_list_schemas(schema)
-        # TODO: do we need this `object_jsonapi_list_schema` field? it's not used anywhere 🤔
-        # self.object_jsonapi_list_schema: Type[JSONAPIObjectSchema] = object_jsonapi_list_schema
+        _object_jsonapi_list_schema, list_jsonapi_schema = self.build_list_schemas(schema)
         return list_jsonapi_schema
 
     def _create_schemas_object_detail(self, schema: Type[BaseModel]) -> Type[JSONAPIResultDetailSchema]:
-        object_jsonapi_detail_schema, detail_jsonapi_schema = self.build_detail_schemas(schema)
-        # TODO: do we need this `object_jsonapi_detail_schema` field? it's not used anywhere 🤔
-        # self.object_jsonapi_detail_schema: Type[JSONAPIObjectSchema] = object_jsonapi_detail_schema
-
+        _object_jsonapi_detail_schema, detail_jsonapi_schema = self.build_detail_schemas(schema)
         return detail_jsonapi_schema
 
     def create_schemas(
@@ -273,8 +269,17 @@ class SchemaBuilder:
             else:
                 attributes_schema_fields[name] = (self._annotation_with_validators(field=field), field.default)
 
+        inflection_formatter = get_inflection_formatter()
         model_config = ConfigDict(
             from_attributes=True,
+            **(
+                {
+                    "alias_generator": inflection_formatter,
+                    "populate_by_name": True,
+                }
+                if inflection_formatter
+                else {}
+            ),
         )
 
         field_validators, model_validators = extract_validators(schema, exclude_for_field_names={"id"})
@@ -322,7 +327,6 @@ class SchemaBuilder:
         name: str,
         relationship_info: RelationshipInfo,
     ) -> Type[BaseJSONAPIRelationshipSchema]:
-        # TODO: cache?
         if name.endswith("s"):
             # plural to single
             name = name[:-1]
@@ -378,7 +382,9 @@ class SchemaBuilder:
 
         relationship_data_schema = create_model(
             f"{schema_name}RelationshipDataJSONAPI",
-            # TODO: on create (post request) sometimes it's required and at the same time on fetch it's not required
+            # Note: on create (post request) the relationship may be required,
+            # while on fetch it's always optional. Currently using field.is_required()
+            # for both — acceptable for pragmatic use.
             data=(relationship_schema, Field(... if field.is_required() else None)),
             __base__=base,
         )

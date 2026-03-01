@@ -130,11 +130,11 @@ class OperationBase:
     @classmethod
     def upd_one_relationship_with_local_id(cls, relationship_info: dict, local_ids: LocalIdsType):
         """
-        TODO: refactor
+        Replace a local identifier (``lid``) in a relationship dict with the
+        real ``id`` resolved from a prior atomic operation.
 
-        :param relationship_info:
-        :param local_ids:
-        :return:
+        :param relationship_info: Mutable dict with ``type``, and optionally ``lid``.
+        :param local_ids: Mapping of ``{resource_type: {lid: real_id}}``.
         """
         missing = object()
         lid = relationship_info.get("lid", missing)
@@ -323,20 +323,22 @@ class OperationRemove(OperationBase):
         dl: BaseDataLayer,
     ) -> None:
         """
-        Calls view to delete object
+        Delete a resource via atomic operation.
 
-        Todo: fix atomic delete
-         Deleting Resources
-           An operation that deletes a resource
-           MUST target that resource
-           through the operation’s ref or href members,
-           but not both.
+        Per the JSON:API atomic extension, a delete operation MUST target the
+        resource through the ref member (containing type and id or lid).
 
-        :param dl:
-        :return:
+        :param dl: The data layer to perform deletion through.
         """
-        if self.ref is None or self.ref.id is None:
-            msg = "Atomic remove operation requires target resource id in ref"
+        if self.ref is None:
+            msg = "Atomic remove operation requires a 'ref' member targeting the resource to delete."
+            raise ValueError(msg)
+
+        if self.ref.id is None:
+            msg = (
+                "Atomic remove operation 'ref' must contain an 'id' "
+                "(or a 'lid' that was resolved to an 'id' from a prior operation)."
+            )
             raise ValueError(msg)
 
         await self.view.process_delete_object(

@@ -515,7 +515,7 @@ def test_prepare_item_data_extracts_resource_meta_fields(monkeypatch):
             self.id = id
             self.attributes = attributes
 
-        def model_dump(self):
+        def model_dump(self, **kwargs):
             return {
                 "id": self.id,
                 "type": "customer",

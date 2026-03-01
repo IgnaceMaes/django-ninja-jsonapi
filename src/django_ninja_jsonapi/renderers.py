@@ -5,6 +5,9 @@ from typing import Any, Optional
 
 from ninja.renderers import JSONRenderer
 
+from django_ninja_jsonapi.inflection import format_keys
+from django_ninja_jsonapi.inflection import get_formatter as get_inflection_formatter
+
 JSONAPI_MEDIA_TYPE = "application/vnd.api+json"
 
 REQUEST_JSONAPI_CONFIG_ATTR = "_jsonapi_resource_config"
@@ -170,6 +173,10 @@ class JSONAPIRenderer(JSONRenderer):
             for key, value in item.items()
             if key not in relationship_keys and key != resource_config.id_field
         }
+
+        inflection = get_inflection_formatter()
+        if inflection:
+            attributes = format_keys(attributes, inflection)
 
         response_item: dict[str, Any] = {
             "id": item_id,

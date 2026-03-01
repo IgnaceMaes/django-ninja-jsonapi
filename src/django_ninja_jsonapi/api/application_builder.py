@@ -92,8 +92,10 @@ class ApplicationBuilder:
             source_schema=schema,
             schema_in_post=schema_in_post,
             schema_in_post_data=dto.schema_in_post_data,
+            schema_in_post_envelope=dto.schema_in_post,
             schema_in_patch=schema_in_patch,
             schema_in_patch_data=dto.schema_in_patch_data,
+            schema_in_patch_envelope=dto.schema_in_patch,
             detail_response_schema=dto.detail_response_schema,
             list_response_schema=dto.list_response_schema,
             pagination_default_size=pagination_default_size,
@@ -171,6 +173,23 @@ class ApplicationBuilder:
                     tags=data.tags,
                     operation_id=relationship_name_id,
                 )(relationship_endpoint)
+
+                # Register relationship mutation endpoints.
+                # To-many: POST (add), PATCH (replace), DELETE (remove).
+                # To-one: PATCH (replace) only.
+                mutation_methods = ("POST", "PATCH", "DELETE") if info.many else ("PATCH",)
+                for http_method in mutation_methods:
+                    mut_op_id, mut_endpoint = relationship_builder.create_relationship_mutation_endpoint(
+                        parent_resource_type=resource_type,
+                        relationship_name=relationship_name,
+                        http_method=http_method,
+                    )
+                    getattr(router, http_method.lower())(
+                        relationship_path,
+                        response=relationship_response,
+                        tags=data.tags,
+                        operation_id=mut_op_id,
+                    )(mut_endpoint)
 
         registered_routers = set()
         for resource_type, router in self._routers.items():

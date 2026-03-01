@@ -19,6 +19,9 @@ Full documentation is available in [docs/index.md](docs/index.md).
 - Top-level/resource/relationship `links` in responses.
 - Django ORM include optimization (`select_related`/`prefetch_related` split) with optional include mapping overrides.
 - Logical filter groups (`and`/`or`/`not`) and cursor pagination (`page[cursor]`).
+- Content-type negotiation (415/406) per the JSON:API spec.
+- Attribute key inflection (`dasherize` or `camelize`).
+- Auto-generated relationship mutation routes (`POST`/`PATCH`/`DELETE` on to-many, `PATCH` on to-one).
 
 ## Requirements
 
@@ -98,6 +101,55 @@ urlpatterns = [
 ]
 ```
 
+### Example response
+
+`GET /api/customers/1/`
+
+```json
+{
+  "data": {
+    "type": "customer",
+    "id": "1",
+    "attributes": {
+      "name": "Alice"
+    },
+    "links": {
+      "self": "http://localhost:8000/api/customers/1/"
+    }
+  },
+  "meta": {
+    "count": 1
+  }
+}
+```
+
+`GET /api/customers/`
+
+```json
+{
+  "data": [
+    {
+      "type": "customer",
+      "id": "1",
+      "attributes": { "name": "Alice" },
+      "links": { "self": "http://localhost:8000/api/customers/1/" }
+    },
+    {
+      "type": "customer",
+      "id": "2",
+      "attributes": { "name": "Bob" },
+      "links": { "self": "http://localhost:8000/api/customers/2/" }
+    }
+  ],
+  "meta": {
+    "count": 2
+  }
+}
+```
+
+Resources have a `type` and `id` at the top level while model fields are nested under `attributes`.
+Relationships, includes, sparse fieldsets, filtering, sorting and pagination all follow the [JSON:API specification](https://jsonapi.org/format/).
+
 ## Configuration
 
 Set JSON:API options in Django settings:
@@ -109,6 +161,7 @@ NINJA_JSONAPI = {
     "ALLOW_DISABLE_PAGINATION": True,
     "INCLUDE_JSONAPI_OBJECT": False,
     "JSONAPI_VERSION": "1.0",
+    "INFLECTION": "dasherize",  # or "camelize", or None (default)
 }
 ```
 

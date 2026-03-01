@@ -12,6 +12,8 @@ from django_ninja_jsonapi.common import get_relationship_info_from_field_metadat
 from django_ninja_jsonapi.data_layers.base import BaseDataLayer
 from django_ninja_jsonapi.data_typing import TypeModel, TypeSchema
 from django_ninja_jsonapi.exceptions import BadRequest, InvalidInclude
+from django_ninja_jsonapi.inflection import format_keys
+from django_ninja_jsonapi.inflection import get_formatter as get_inflection_formatter
 from django_ninja_jsonapi.querystring import QueryStringManager
 from django_ninja_jsonapi.schema import BaseJSONAPIItemInSchema
 from django_ninja_jsonapi.schema_base import BaseModel
@@ -131,6 +133,87 @@ class ViewBase:
         total_pages = self._calculate_total_pages(count)
         return self._build_list_response(items_from_db, count, total_pages)
 
+    async def handle_create_relationship(
+        self,
+        obj_id: str,
+        relationship_name: str,
+        parent_resource_type: str,
+        json_data: dict,
+        **extra_view_deps,
+    ) -> dict:
+        """POST to a relationship: adds members to a to-many relationship."""
+        dl: BaseDataLayer = await self.get_data_layer(extra_view_deps)
+        relationship_info = schemas_storage.get_relationship_info(
+            resource_type=parent_resource_type,
+            operation_type="get",
+            field_name=relationship_name,
+        )
+        if relationship_info is None:
+            raise BadRequest(detail=f"Relationship {relationship_name!r} not found for {parent_resource_type!r}")
+
+        view_kwargs = {dl.url_id_field: obj_id}
+        await dl.create_relationship(
+            json_data=json_data,
+            relationship_field=relationship_name,
+            related_id_field=relationship_info.id_field_name,
+            view_kwargs=view_kwargs,
+        )
+        return await self.handle_get_resource_detail(obj_id=obj_id)
+
+    async def handle_update_relationship(
+        self,
+        obj_id: str,
+        relationship_name: str,
+        parent_resource_type: str,
+        json_data: dict,
+        **extra_view_deps,
+    ) -> dict:
+        """PATCH a relationship: full replacement."""
+        dl: BaseDataLayer = await self.get_data_layer(extra_view_deps)
+        relationship_info = schemas_storage.get_relationship_info(
+            resource_type=parent_resource_type,
+            operation_type="get",
+            field_name=relationship_name,
+        )
+        if relationship_info is None:
+            raise BadRequest(detail=f"Relationship {relationship_name!r} not found for {parent_resource_type!r}")
+
+        view_kwargs = {dl.url_id_field: obj_id}
+        await dl.update_relationship(
+            json_data=json_data,
+            relationship_field=relationship_name,
+            related_id_field=relationship_info.id_field_name,
+            view_kwargs=view_kwargs,
+        )
+        return await self.handle_get_resource_detail(obj_id=obj_id)
+
+    async def handle_delete_relationship(
+        self,
+        obj_id: str,
+        relationship_name: str,
+        parent_resource_type: str,
+        json_data: dict,
+        **extra_view_deps,
+    ) -> dict:
+        """DELETE from a relationship: removes members from a to-many relationship."""
+        dl: BaseDataLayer = await self.get_data_layer(extra_view_deps)
+        relationship_info = schemas_storage.get_relationship_info(
+            resource_type=parent_resource_type,
+            operation_type="get",
+            field_name=relationship_name,
+        )
+        if relationship_info is None:
+            raise BadRequest(detail=f"Relationship {relationship_name!r} not found for {parent_resource_type!r}")
+
+        view_kwargs = {dl.url_id_field: obj_id}
+        await dl.delete_relationship(
+            json_data=json_data,
+            relationship_field=relationship_name,
+            related_id_field=relationship_info.id_field_name,
+            view_kwargs=view_kwargs,
+        )
+        return await self.handle_get_resource_detail(obj_id=obj_id)
+
     async def handle_update_resource(
         self,
         obj_id: str,
@@ -153,7 +236,6 @@ class ViewBase:
             )
         view_kwargs = {
             dl.url_id_field: obj_id,
-            "required_to_load": data_update.attributes.model_fields.keys(),
         }
         db_object = await dl.get_object(view_kwargs=view_kwargs, qs=self.query_params)
 
@@ -428,7 +510,7 @@ class ViewBase:
             result = data_schema(
                 id=object_id,
                 attributes=attrs_schema.model_validate(db_item),
-            ).model_dump()
+            ).model_dump(by_alias=True)
 
             for meta_field in meta_fields:
                 result.get("attributes", {}).pop(meta_field, None)
@@ -471,10 +553,14 @@ class ViewBase:
 
                 result_attributes[field_name] = getattr(validated_model, field_name)
 
+        attrs = {key: value for key, value in result_attributes.items() if key not in meta_fields}
+        inflection = get_inflection_formatter()
+        if inflection:
+            attrs = format_keys(attrs, inflection)
         result = {
             "id": object_id,
             "type": resource_type,
-            "attributes": {key: value for key, value in result_attributes.items() if key not in meta_fields},
+            "attributes": attrs,
             "links": {},
         }
 
