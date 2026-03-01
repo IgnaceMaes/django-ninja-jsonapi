@@ -335,8 +335,8 @@ class TestCompoundDocuments:
     async def test_include_multiple_to_many_relationships(self):
         """Multiple resources can be included via relationships."""
         cust = await _create_customer()
-        comp1 = await _create_computer("SN-001", owner=cust)
-        comp2 = await _create_computer("SN-002", owner=cust)
+        await _create_computer("SN-001", owner=cust)
+        await _create_computer("SN-002", owner=cust)
         client = AsyncClient()
         resp = await client.get(f"/api/customers/{cust.pk}/?include=computers")
         body = json.loads(resp.content)
