@@ -12,6 +12,7 @@ from django_ninja_jsonapi.response_helpers import (
     jsonapi_include,
     jsonapi_links,
     jsonapi_meta,
+    jsonapi_paginate,
     jsonapi_pagination,
 )
 
@@ -29,6 +30,7 @@ __all__ = [
     "jsonapi_include",
     "jsonapi_links",
     "jsonapi_meta",
+    "jsonapi_paginate",
     "jsonapi_pagination",
     "jsonapi_resource",
     "jsonapi_response",

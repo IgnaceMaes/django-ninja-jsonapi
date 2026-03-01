@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Optional
+from typing import Any, Optional, Sequence, TypeVar, Union
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.http import HttpRequest
 
 from django_ninja_jsonapi.renderers import (
@@ -15,6 +16,13 @@ from django_ninja_jsonapi.renderers import (
     JSONAPIResourceConfig,
     normalize_relationships,
 )
+
+T = TypeVar("T")
+
+
+def _get_jsonapi_config() -> dict[str, Any]:
+    """Read the NINJA_JSONAPI config dict from Django settings."""
+    return getattr(settings, "NINJA_JSONAPI", {})
 
 
 def jsonapi_include(
@@ -47,8 +55,98 @@ def jsonapi_links(request: HttpRequest, **links: str) -> None:
     setattr(request, REQUEST_JSONAPI_LINKS_ATTR, current_links)
 
 
+# ---------------------------------------------------------------------------
+# High-level pagination (inspired by DRF JSON:API)
+# ---------------------------------------------------------------------------
 
 
+def jsonapi_paginate(
+    request: HttpRequest,
+    items: Union[Any, Sequence[T]],
+    *,
+    page_size: int | None = None,
+    max_page_size: int | None = None,
+) -> list[T]:
+    """Paginate a queryset or list and set JSON:API pagination meta + links.
+
+    Reads ``page[number]`` and ``page[size]`` from query parameters (falling
+    back to *page_size* or the ``NINJA_JSONAPI["MAX_PAGE_SIZE"]`` setting).
+    Counts, slices, sets ``meta`` (``count``, ``totalPages``) and ``links``
+    (``first``, ``last``, ``prev``, ``next``) on the request, and returns the
+    page of items.
+
+    This is the recommended way to paginate list endpoints — it mirrors how
+    DRF JSON:API handles pagination automatically::
+
+        @api.get("/articles", response=list[ArticleSchema])
+        @jsonapi_resource("articles")
+        def list_articles(request):
+            return jsonapi_paginate(request, Article.objects.order_by("id"))
+
+    Items can be a Django ``QuerySet``, a plain ``list``, or any sliceable
+    sequence.  Django model instances in the returned list are auto-serialized
+    by the renderer.
+
+    Args:
+        request: The current HTTP request.
+        items: A Django ``QuerySet`` or any sliceable sequence.
+        page_size: Default page size when the client doesn't send
+            ``page[size]``.  Falls back to ``NINJA_JSONAPI["MAX_PAGE_SIZE"]``
+            (default 20).
+        max_page_size: Upper bound for client-requested ``page[size]``.
+            Falls back to ``NINJA_JSONAPI["MAX_PAGE_SIZE"]`` (default 100).
+
+    Returns:
+        A ``list`` containing the items for the requested page.
+    """
+    config = _get_jsonapi_config()
+
+    # ---- resolve effective page_size ----
+    default_size = page_size if page_size is not None else config.get("DEFAULT_PAGE_SIZE", 20)
+    effective_max = max_page_size if max_page_size is not None else config.get("MAX_PAGE_SIZE", 100)
+
+    requested = request.GET.get("page[size]")
+    if requested is not None:
+        effective_size = int(requested)
+    else:
+        effective_size = default_size
+
+    if effective_max and effective_size > effective_max:
+        effective_size = effective_max
+
+    # ---- resolve page number ----
+    page_number = int(request.GET.get("page[number]", 1))
+    if page_number < 1:
+        page_number = 1
+
+    # ---- count ----
+    try:
+        from django.db.models import QuerySet
+
+        is_queryset = isinstance(items, QuerySet)
+    except ImportError:  # pragma: no cover
+        is_queryset = False
+
+    if is_queryset:
+        count = items.count()  # QuerySet.count() — avoids loading all rows
+    else:
+        count = len(items)
+
+    # ---- slice ----
+    start = (page_number - 1) * effective_size
+    page_items = items[start : start + effective_size]
+    if not isinstance(page_items, list):
+        page_items = list(page_items)
+
+    # ---- set JSON:API pagination meta + links ----
+    jsonapi_pagination(
+        request,
+        count=count,
+        page_size=effective_size,
+        page_number=page_number,
+    )
+
+    return page_items
 
 # ---------------------------------------------------------------------------
 # Pagination helpers

@@ -124,9 +124,39 @@ def get_article(request, article_id: int):
 
 ## Pagination
 
-### Number-based pagination
+### Automatic pagination (recommended)
 
-Use `jsonapi_pagination()` to add pagination meta (`count`, `totalPages`) and links (`first`, `last`, `prev`, `next`):
+Use `jsonapi_paginate()` — pass a queryset and it handles everything:
+
+```python
+from django_ninja_jsonapi import jsonapi_paginate, jsonapi_resource
+
+
+@api.get("/articles")
+@jsonapi_resource("articles")
+def list_articles(request):
+    return jsonapi_paginate(request, Article.objects.order_by("id"))
+```
+
+This reads `page[number]` and `page[size]` from query parameters, counts the
+queryset, slices it, and sets the JSON:API `meta` (`count`, `totalPages`) and
+`links` (`first`, `last`, `prev`, `next`) automatically.  Inspired by DRF
+JSON:API's built-in pagination behavior.
+
+Options:
+
+| Parameter | Default | Description |
+|---|---|---|
+| `page_size` | `NINJA_JSONAPI["DEFAULT_PAGE_SIZE"]` or `20` | Default items per page when the client doesn't send `page[size]` |
+| `max_page_size` | `NINJA_JSONAPI["MAX_PAGE_SIZE"]` or `100` | Upper bound for client-requested `page[size]` |
+
+Works with Django `QuerySet`, plain `list`, or any sliceable sequence.  Django
+model instances in the returned list are auto-serialized by the renderer.
+
+### Low-level pagination
+
+If you need more control, use `jsonapi_pagination()` to set the meta and links
+yourself:
 
 ```python
 from django_ninja_jsonapi import jsonapi_pagination, jsonapi_resource
@@ -145,8 +175,6 @@ def list_articles(request):
     jsonapi_pagination(request, count=count, page_size=page_size, page_number=page_number)
     return items
 ```
-
-The helper computes `totalPages` and builds spec-compliant pagination links, preserving existing query parameters (filters, sorts, includes).
 
 ### Cursor-based pagination
 
@@ -303,7 +331,7 @@ from pydantic import BaseModel
 
 from django_ninja_jsonapi import (
     jsonapi_body,
-    jsonapi_pagination,
+    jsonapi_paginate,
     jsonapi_resource,
     jsonapi_response,
     setup_jsonapi,
@@ -328,14 +356,7 @@ setup_jsonapi(api)
 @api.get("/articles", response=jsonapi_response(ArticleSchema, "articles", many=True))
 @jsonapi_resource("articles")
 def list_articles(request):
-    page_number = int(request.GET.get("page[number]", 1))
-    page_size = int(request.GET.get("page[size]", 20))
-    qs = Article.objects.all()
-    count = qs.count()
-    start = (page_number - 1) * page_size
-    items = list(qs[start : start + page_size].values())
-    jsonapi_pagination(request, count=count, page_size=page_size, page_number=page_number)
-    return items
+    return jsonapi_paginate(request, Article.objects.order_by("id"))
 
 
 @api.get("/articles/{article_id}", response=jsonapi_response(ArticleSchema, "articles"))

@@ -1,7 +1,7 @@
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 
 from django_ninja_jsonapi.renderers import REQUEST_JSONAPI_LINKS_ATTR, REQUEST_JSONAPI_META_ATTR
-from django_ninja_jsonapi.response_helpers import jsonapi_cursor_pagination, jsonapi_pagination
+from django_ninja_jsonapi.response_helpers import jsonapi_cursor_pagination, jsonapi_paginate, jsonapi_pagination
 
 
 class TestJsonapiPagination:
@@ -131,3 +131,118 @@ class TestJsonapiCursorPagination:
 
         links = getattr(request, REQUEST_JSONAPI_LINKS_ATTR)
         assert "50" in links["next"]
+
+
+# ---------------------------------------------------------------------------
+# jsonapi_paginate — high-level automatic pagination
+# ---------------------------------------------------------------------------
+
+
+class TestJsonapiPaginate:
+    """Tests for the high-level jsonapi_paginate helper."""
+
+    def test_returns_first_page_of_list(self):
+        request = RequestFactory().get("/articles/")
+        items = list(range(50))
+        page = jsonapi_paginate(request, items, page_size=10)
+
+        assert page == list(range(10))
+        meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
+        assert meta["count"] == 50
+        assert meta["totalPages"] == 5
+
+    def test_returns_second_page(self):
+        request = RequestFactory().get("/articles/?page[number]=2")
+        items = list(range(50))
+        page = jsonapi_paginate(request, items, page_size=10)
+
+        assert page == list(range(10, 20))
+
+    def test_reads_page_size_from_query_param(self):
+        request = RequestFactory().get("/articles/?page[size]=5")
+        items = list(range(50))
+        page = jsonapi_paginate(request, items)
+
+        assert len(page) == 5
+
+    def test_sets_links(self):
+        request = RequestFactory().get("/articles/")
+        items = list(range(50))
+        jsonapi_paginate(request, items, page_size=10)
+
+        links = getattr(request, REQUEST_JSONAPI_LINKS_ATTR)
+        assert "first" in links
+        assert "last" in links
+        assert "next" in links
+        assert "prev" not in links  # first page
+
+    def test_last_page_has_no_next(self):
+        request = RequestFactory().get("/articles/?page[number]=5")
+        items = list(range(50))
+        jsonapi_paginate(request, items, page_size=10)
+
+        links = getattr(request, REQUEST_JSONAPI_LINKS_ATTR)
+        assert "next" not in links
+        assert "prev" in links
+
+    @override_settings(NINJA_JSONAPI={"MAX_PAGE_SIZE": 15})
+    def test_clamps_to_max_page_size_from_settings(self):
+        request = RequestFactory().get("/articles/?page[size]=100")
+        items = list(range(50))
+        page = jsonapi_paginate(request, items)
+
+        assert len(page) == 15
+        meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
+        assert meta["totalPages"] == 4  # ceil(50/15)
+
+    def test_clamps_to_explicit_max_page_size(self):
+        request = RequestFactory().get("/articles/?page[size]=100")
+        items = list(range(50))
+        page = jsonapi_paginate(request, items, max_page_size=25)
+
+        assert len(page) == 25
+
+    def test_works_with_queryset_like_objects(self):
+        """Anything with __len__ and __getitem__ should work."""
+
+        class FakeQuerySet:
+            def __init__(self, data):
+                self._data = data
+
+            def __len__(self):
+                return len(self._data)
+
+            def __getitem__(self, key):
+                return self._data[key]
+
+        request = RequestFactory().get("/articles/")
+        qs = FakeQuerySet(list(range(30)))
+        page = jsonapi_paginate(request, qs, page_size=10)
+
+        assert page == list(range(10))
+        meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
+        assert meta["count"] == 30
+
+    def test_empty_collection(self):
+        request = RequestFactory().get("/articles/")
+        page = jsonapi_paginate(request, [], page_size=10)
+
+        assert page == []
+        meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
+        assert meta["count"] == 0
+        assert meta["totalPages"] == 1
+
+    def test_page_number_below_one_defaults_to_one(self):
+        request = RequestFactory().get("/articles/?page[number]=0")
+        items = list(range(50))
+        page = jsonapi_paginate(request, items, page_size=10)
+
+        assert page == list(range(10))
+
+    @override_settings(NINJA_JSONAPI={"DEFAULT_PAGE_SIZE": 7})
+    def test_default_page_size_from_settings(self):
+        request = RequestFactory().get("/articles/")
+        items = list(range(50))
+        page = jsonapi_paginate(request, items)
+
+        assert len(page) == 7

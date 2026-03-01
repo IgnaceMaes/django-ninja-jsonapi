@@ -1,7 +1,7 @@
 from ninja import NinjaAPI
 from pydantic import BaseModel
 
-from django_ninja_jsonapi import JSONAPIRenderer, jsonapi_include, jsonapi_meta, jsonapi_resource
+from django_ninja_jsonapi import JSONAPIRenderer, jsonapi_include, jsonapi_meta, jsonapi_paginate, jsonapi_resource
 
 from .models import Customer
 
@@ -22,8 +22,7 @@ api = NinjaAPI(
 @api.get("/customers", response=list[CustomerStandaloneSchema], tags=["standalone-customers"])
 @jsonapi_resource("customer")
 def list_customers(request):
-    customers = Customer.objects.order_by("id")
-    return [{"id": customer.id, "name": customer.name, "email": customer.email} for customer in customers]
+    return jsonapi_paginate(request, Customer.objects.order_by("id"))
 
 
 @api.get("/customers/{customer_id}", response=CustomerStandaloneSchema, tags=["standalone-customers"])
