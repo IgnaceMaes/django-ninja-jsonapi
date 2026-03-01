@@ -34,6 +34,8 @@
 - [Filtering](filtering.md)
 - [Sorting](sorting.md)
 - [Pagination](pagination.md)
+- [Content Negotiation](content_negotiation.md)
+- [Inflection](inflection.md)
 - [Errors](errors.md)
 
 ### Examples

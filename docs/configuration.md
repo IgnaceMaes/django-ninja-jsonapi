@@ -30,6 +30,11 @@ NINJA_JSONAPI = {
   responses.  Applies to both `ApplicationBuilder` and standalone
   `@jsonapi_resource` endpoints.
 - `JSONAPI_VERSION`: version string used when `INCLUDE_JSONAPI_OBJECT=True`.
+- `INFLECTION`: attribute-key transformation applied to JSON:API documents.
+    - `None` (default) — keys match Python field names.
+    - `"dasherize"` — `first_name` → `first-name`.
+    - `"camelize"` — `first_name` → `firstName`.
+    - See [Inflection](inflection.md) for details.
 
 ## Practical guidance
 
