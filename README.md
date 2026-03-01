@@ -153,6 +153,43 @@ urlpatterns = [
 Resources have a `type` and `id` at the top level while model fields are nested under `attributes`.
 Relationships, includes, sparse fieldsets, filtering, sorting and pagination all follow the [JSON:API specification](https://jsonapi.org/format/).
 
+## Architecture
+
+The library provides two APIs. Both produce spec-compliant JSON:API responses through `JSONAPIRenderer`.
+
+### ApplicationBuilder — request flow
+
+`ApplicationBuilder` auto-generates CRUD routes from a model + schema pair. Incoming requests flow through the full pipeline:
+
+```mermaid
+flowchart LR
+    Client -->|HTTP request| NinjaAPI
+    NinjaAPI --> ContentNegotiation
+    ContentNegotiation --> ViewBase["ViewBase\n(generated endpoint)"]
+    ViewBase --> QSM["QueryStringManager\n(parse filter / sort /\ninclude / fields / page)"]
+    QSM --> DataLayer["DjangoORMDataLayer\n(apply filters, sorts,\nselect_related,\nprefetch_related)"]
+    DataLayer --> DB[(Django ORM)]
+    DB --> DataLayer
+    DataLayer --> ViewBase
+    ViewBase -->|"build response\n(relationships, links, meta)"| JSONAPIRenderer
+    JSONAPIRenderer -->|"application/vnd.api+json"| Client
+```
+
+### Standalone renderer — request flow
+
+With `setup_jsonapi(api)` you write plain Django Ninja endpoints; the `@jsonapi_resource` decorator attaches config to the request and `JSONAPIRenderer` wraps the return value into a JSON:API document.
+
+```mermaid
+flowchart LR
+    Client -->|HTTP request| NinjaAPI
+    NinjaAPI --> Decorator["@jsonapi_resource\n(attach resource config\nto request)"]
+    Decorator --> Endpoint["User endpoint\n(custom query logic)"]
+    Endpoint -->|"dict / Pydantic / Model"| JSONAPIRenderer
+    JSONAPIRenderer -->|"application/vnd.api+json"| Client
+```
+
+For full standalone usage (pagination, relationships, OpenAPI schemas, request body parsing, CRUD example), see the [standalone renderer docs](https://ignacemaes.com/django-ninja-jsonapi/standalone_renderer/).
+
 ## Configuration
 
 Set JSON:API options in Django settings:

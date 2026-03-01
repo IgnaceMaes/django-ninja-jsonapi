@@ -7,6 +7,7 @@ nav = [
     "getting-started.md",
     {"Installation" = "installation.md"},
     {"Quickstart" = "quickstart.md"},
+    {"Standalone renderer" = "standalone_renderer.md"},
     {"Minimal API (head)" = "minimal_api_head.md"},
     {"Minimal API example" = "minimal_api_example.md"}
   ]},
