@@ -12,19 +12,42 @@ This project ports the core ideas of `fastapi-jsonapi` to a Django Ninja + Djang
 
 Full documentation is available at [ignacemaes.com/django-ninja-jsonapi](https://ignacemaes.com/django-ninja-jsonapi/).
 
-## Status
+## Two ways to use the library
 
-- Working baseline for resource registration and route generation (`GET`, `GET LIST`, `POST`, `PATCH`, `DELETE`).
-- Strict query parsing for JSON:API-style `filter`, `sort`, `include`, `fields`, and `page` parameters.
-- JSON:API exception payload handling.
-- Atomic operations endpoint wiring (`/operations`).
-- Django ORM data-layer baseline for CRUD + basic relationship handling.
-- Top-level/resource/relationship `links` in responses.
-- Django ORM include optimization (`select_related`/`prefetch_related` split) with optional include mapping overrides.
-- Logical filter groups (`and`/`or`/`not`) and cursor pagination (`page[cursor]`).
-- Content-type negotiation (415/406) per the JSON:API spec.
-- Attribute key inflection (`dasherize` or `camelize`).
-- Auto-generated relationship mutation routes (`POST`/`PATCH`/`DELETE` on to-many, `PATCH` on to-one).
+`django-ninja-jsonapi` offers two APIs that can be used independently or together:
+
+| | **ApplicationBuilder** | **Standalone Renderer** |
+|---|---|---|
+| **Use case** | Full auto-generated CRUD | Manual endpoint control |
+| **Routes** | Generated from model + schema | You define each `@api.get` / `@api.post` |
+| **Data layer** | Built-in Django ORM layer | Bring your own queries |
+| **Best for** | Rapid resource APIs | Custom logic, gradual adoption |
+
+### ApplicationBuilder
+
+Auto-generates CRUD routes, relationship endpoints, filtering, sorting, pagination, and includes from a model + schema pair.
+
+```mermaid
+graph LR
+    A[Define Model + Schema] --> B[Create ViewBaseGeneric]
+    B --> C[Register with ApplicationBuilder]
+    C --> D[builder.initialize]
+    D --> E[GET / POST / PATCH / DELETE]
+    D --> F[Relationship routes]
+    D --> G[Filtering / Sorting / Pagination]
+```
+
+### Standalone Renderer
+
+Lets you write normal Django Ninja endpoints while the renderer handles JSON:API serialization (`data`, `attributes`, `relationships`, `links`).
+
+```mermaid
+graph LR
+    A[Create NinjaAPI] --> B["setup_jsonapi(api)"]
+    B --> C["Decorate with @jsonapi_resource"]
+    C --> D[Return dict / Pydantic / Model]
+    D --> E[JSON:API response]
+```
 
 ## Requirements
 
@@ -44,7 +67,7 @@ or
 - `poetry add django-ninja-jsonapi`
 - `pdm add django-ninja-jsonapi`
 
-## Quick start
+## Quick start — ApplicationBuilder
 
 ### 1) Define a Django model and a schema
 
@@ -104,48 +127,53 @@ urlpatterns = [
 ]
 ```
 
+This generates `GET`, `POST`, `PATCH`, `DELETE` endpoints plus relationship routes — all with JSON:API query support (filtering, sorting, pagination, includes, sparse fieldsets).
+
+## Quick start — Standalone Renderer
+
+### 1) Set up the API
+
+```python
+from ninja import NinjaAPI
+from pydantic import BaseModel
+
+from django_ninja_jsonapi import jsonapi_resource, setup_jsonapi
+
+api = NinjaAPI()
+setup_jsonapi(api)
+```
+
+### 2) Define an endpoint
+
+```python
+class ArticleSchema(BaseModel):
+    id: int
+    title: str
+
+
+@api.get("/articles/{article_id}", response=ArticleSchema)
+@jsonapi_resource("articles")
+def get_article(request, article_id: int):
+    return {"id": article_id, "title": "Hello"}
+```
+
+You write the endpoint logic; the renderer wraps it in a JSON:API envelope. Use `jsonapi_include`, `jsonapi_meta`, and `jsonapi_links` helpers for sideloading, metadata, and link objects. See the [standalone renderer docs](https://ignacemaes.com/django-ninja-jsonapi/standalone_renderer/) for pagination, relationships, OpenAPI schemas, request body parsing, and a full CRUD example.
+
 ### Example response
 
-`GET /api/customers/1/`
+`GET /api/articles/1/`
 
 ```json
 {
   "data": {
-    "type": "customer",
+    "type": "articles",
     "id": "1",
     "attributes": {
-      "name": "Alice"
+      "title": "Hello"
     },
     "links": {
-      "self": "http://localhost:8000/api/customers/1/"
+      "self": "http://localhost:8000/api/articles/1/"
     }
-  },
-  "meta": {
-    "count": 1
-  }
-}
-```
-
-`GET /api/customers/`
-
-```json
-{
-  "data": [
-    {
-      "type": "customer",
-      "id": "1",
-      "attributes": { "name": "Alice" },
-      "links": { "self": "http://localhost:8000/api/customers/1/" }
-    },
-    {
-      "type": "customer",
-      "id": "2",
-      "attributes": { "name": "Bob" },
-      "links": { "self": "http://localhost:8000/api/customers/2/" }
-    }
-  ],
-  "meta": {
-    "count": 2
   }
 }
 ```
