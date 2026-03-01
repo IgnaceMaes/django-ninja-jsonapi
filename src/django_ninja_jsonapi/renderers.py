@@ -230,10 +230,7 @@ class JSONAPIRenderer(JSONRenderer):
 
         rel_id = value.get(relationship_config.id_field)
         if rel_id is None:
-            msg = (
-                "JSON:API relationship value is missing id field. "
-                f"Expected field {relationship_config.id_field!r}."
-            )
+            msg = f"JSON:API relationship value is missing id field. Expected field {relationship_config.id_field!r}."
             raise ValueError(msg)
 
         return {

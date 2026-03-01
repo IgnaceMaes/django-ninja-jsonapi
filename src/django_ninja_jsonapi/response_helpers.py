@@ -124,14 +124,10 @@ def jsonapi_pagination(
     }
 
     if page_number > 1:
-        links["prev"] = _build_page_url(
-            request, {"page[number]": str(page_number - 1), "page[size]": str(page_size)}
-        )
+        links["prev"] = _build_page_url(request, {"page[number]": str(page_number - 1), "page[size]": str(page_size)})
 
     if page_number < total_pages:
-        links["next"] = _build_page_url(
-            request, {"page[number]": str(page_number + 1), "page[size]": str(page_size)}
-        )
+        links["next"] = _build_page_url(request, {"page[number]": str(page_number + 1), "page[size]": str(page_size)})
 
     jsonapi_links(request, **links)
 
@@ -163,14 +159,10 @@ def jsonapi_cursor_pagination(
     links: dict[str, str] = {}
 
     if next_cursor is not None:
-        links["next"] = _build_page_url(
-            request, {"page[cursor]": next_cursor, "page[size]": str(page_size)}
-        )
+        links["next"] = _build_page_url(request, {"page[cursor]": next_cursor, "page[size]": str(page_size)})
 
     if prev_cursor is not None:
-        links["prev"] = _build_page_url(
-            request, {"page[cursor]": prev_cursor, "page[size]": str(page_size)}
-        )
+        links["prev"] = _build_page_url(request, {"page[cursor]": prev_cursor, "page[size]": str(page_size)})
 
     if links:
         jsonapi_links(request, **links)
