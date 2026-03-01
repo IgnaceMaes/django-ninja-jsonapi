@@ -18,6 +18,57 @@ _RESPONSE_CACHE: dict[str, Type[BaseModel]] = {}
 _BODY_CACHE: dict[str, Type[BaseModel]] = {}
 
 
+# ---------------------------------------------------------------------------
+# Shared models for well-typed links / included / jsonapi version
+# ---------------------------------------------------------------------------
+
+
+class JsonApiVersionObject(BaseModel):
+    """Top-level ``jsonapi`` key."""
+
+    version: str = Field(default="1.0", examples=["1.0"])
+
+
+class ResourceLinks(BaseModel):
+    """Links object on a resource object."""
+
+    model_config = ConfigDict(extra="allow")
+
+    self: Optional[str] = Field(default=None, examples=["http://example.com/articles/1/"])
+
+
+class DocumentLinks(BaseModel):
+    """Top-level document links (always includes ``self``, may include pagination)."""
+
+    model_config = ConfigDict(extra="allow")
+
+    self: Optional[str] = Field(default=None, examples=["http://example.com/articles/"])
+    first: Optional[str] = Field(default=None, examples=["http://example.com/articles/?page[number]=1"])
+    last: Optional[str] = Field(default=None, examples=["http://example.com/articles/?page[number]=5"])
+    prev: Optional[str] = Field(default=None, examples=[None])
+    next: Optional[str] = Field(default=None, examples=["http://example.com/articles/?page[number]=2"])
+
+
+class RelationshipLinks(BaseModel):
+    """Links inside a relationship object."""
+
+    model_config = ConfigDict(extra="allow")
+
+    self: Optional[str] = Field(default=None, examples=["http://example.com/articles/1/relationships/author/"])
+    related: Optional[str] = Field(default=None, examples=["http://example.com/articles/1/author/"])
+
+
+class IncludedResourceObject(BaseModel):
+    """A resource object inside the ``included`` array."""
+
+    model_config = ConfigDict(extra="allow")
+
+    id: str = Field(examples=["1"])
+    type: str = Field(examples=["people"])
+    attributes: Optional[dict[str, Any]] = None
+    links: Optional[ResourceLinks] = None
+
+
 def _cache_key(
     schema: Type[BaseModel],
     resource_type: str,
@@ -56,13 +107,13 @@ def _build_relationship_fields(
             data_model = create_model(
                 f"{rel_name.title().replace('-', '')}RelToMany",
                 data=(list[identifier], ...),
-                links=(Optional[dict[str, Any]], None),
+                links=(Optional[RelationshipLinks], None),
             )
         else:
             data_model = create_model(
                 f"{rel_name.title().replace('-', '')}RelToOne",
                 data=(identifier, ...),
-                links=(Optional[dict[str, Any]], None),
+                links=(Optional[RelationshipLinks], None),
             )
 
         fields[rel_name] = (Optional[data_model], None)
@@ -120,10 +171,10 @@ def jsonapi_response(
 
     # --- resource object ---
     resource_object_fields: dict[str, tuple[type, Any]] = {
-        "id": (str, Field(description="Resource object ID")),
+        "id": (str, Field(description="Resource object ID", examples=["1"])),
         "type": (Literal[resource_type], Field(default=resource_type, description="Resource type")),  # type: ignore[valid-type]
         "attributes": (attributes_model, Field(description="Resource object attributes")),
-        "links": (Optional[dict[str, Any]], Field(default=None, description="Resource links")),
+        "links": (Optional[ResourceLinks], Field(default=None, description="Resource links")),
     }
 
     if rel_field_defs:
@@ -141,37 +192,34 @@ def jsonapi_response(
         **resource_object_fields,
     )
 
-    # --- jsonapi object ---
-    jsonapi_object_model = create_model(
-        f"{schema_name}JsonApiVersion",
-        version=(str, Field(default="1.0", description="JSON:API version")),
-    )
-
     # --- meta ---
     if many:
         meta_model = create_model(
             f"{schema_name}ListMeta",
-            count=(Optional[int], None),
-            totalPages=(Optional[int], Field(default=None, alias="totalPages")),
+            count=(Optional[int], Field(default=None, examples=[100])),
+            totalPages=(Optional[int], Field(default=None, alias="totalPages", examples=[5])),
         )
     else:
         meta_model = None  # type: ignore[assignment]
 
     # --- top-level document ---
-    doc_fields: dict[str, tuple[type, Any]] = {
-        "links": (Optional[dict[str, Any]], Field(default=None, description="Top level document links")),
-        "jsonapi": (Optional[jsonapi_object_model], Field(default=None, description="JSON:API version object")),
-    }
+    doc_fields: dict[str, tuple[type, Any]] = {}
 
     if many:
         doc_fields["data"] = (list[resource_object_model], Field(description="Resource objects collection"))
+        doc_fields["links"] = (Optional[DocumentLinks], Field(default=None, description="Top level document links"))
         doc_fields["meta"] = (Optional[meta_model], Field(default=None, description="JSON:API metadata"))
     else:
         doc_fields["data"] = (resource_object_model, Field(description="Resource object data"))
+        doc_fields["links"] = (Optional[ResourceLinks], Field(default=None, description="Top level document links"))
         doc_fields["meta"] = (Optional[dict[str, Any]], Field(default=None, description="JSON:API metadata"))
 
+    doc_fields["jsonapi"] = (
+        Optional[JsonApiVersionObject],
+        Field(default=None, description="JSON:API version object"),
+    )
     doc_fields["included"] = (
-        Optional[list[dict[str, Any]]],
+        Optional[list[IncludedResourceObject]],
         Field(default=None, description="Included related resources"),
     )
 
