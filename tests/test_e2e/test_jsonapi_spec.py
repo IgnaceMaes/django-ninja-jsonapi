@@ -307,10 +307,7 @@ class TestCompoundDocuments:
     async def test_included_resources_are_deduplicated(self):
         """Included resources MUST NOT contain duplicates (same type+id)."""
         cust = await _create_customer()
-        comp = await _create_computer("SN-001", owner=cust)
-        # Create a second customer that also references the same computer model won't work
-        # Instead, test dedup via multiple include paths on the same collection
-        # Use the computer that has an owner; include owner from computers list
+        await _create_computer("SN-001", owner=cust)
         client = AsyncClient()
         resp = await client.get(f"/api/customers/{cust.pk}/?include=computers")
         body = json.loads(resp.content)
@@ -322,12 +319,11 @@ class TestCompoundDocuments:
             assert key not in seen, f"Duplicate included resource: {key}"
             seen.add(key)
 
-    async def test_include_to_one(self):
-        """Including a to-many relationship on a parent populates included."""
+    async def test_include_relationship_populates_included(self):
+        """Including a relationship populates the included member."""
         cust = await _create_customer()
-        comp = await _create_computer("SN-001", owner=cust)
+        await _create_computer("SN-001", owner=cust)
         client = AsyncClient()
-        # Test from the customer side (include to-many computers)
         resp = await client.get(f"/api/customers/{cust.pk}/?include=computers")
         body = json.loads(resp.content)
 
