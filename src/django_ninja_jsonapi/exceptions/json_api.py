@@ -13,7 +13,7 @@ class HTTPException(Exception):
 
     def __init__(
         self,
-        detail: Union[str, dict] = "",
+        detail: Union[str, dict, list] = "",
         pointer: str = "",
         parameter: str = "",
         title: Optional[str] = None,

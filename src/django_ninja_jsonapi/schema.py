@@ -172,7 +172,7 @@ FieldValidators = dict[str, Callable]
 @dataclass(frozen=True)
 class SchemasInfoDTO:
     # id field
-    resource_id_field: tuple[Type, FieldInfo, Callable, FieldValidators]
+    resource_id_field: tuple[Any, Any, Any, Any]
     # pre-built attributes
     attributes_schema: Type[BaseModel]
     # relationships
@@ -180,7 +180,7 @@ class SchemasInfoDTO:
     # has any required relationship
     has_required_relationship: bool
     # anything that can be included
-    included_schemas: list[tuple[str, BaseModel, str]]
+    included_schemas: list[tuple[str, Type[BaseModel], str]]
 
     relationships_info: dict[str, tuple[RelationshipInfo, Any]]
 
@@ -273,4 +273,6 @@ def get_related_schema(schema: Type[TypeSchema], field: str) -> Type[TypeSchema]
     :params field: the relationship field
     :return: the related schema
     """
-    return get_schema_from_field_annotation(schema.model_fields[field])
+    result = get_schema_from_field_annotation(schema.model_fields[field])
+    assert result is not None
+    return result

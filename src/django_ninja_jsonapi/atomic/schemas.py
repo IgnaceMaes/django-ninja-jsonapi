@@ -5,7 +5,8 @@ from pydantic import BaseModel, Field, model_validator
 
 
 class OperationRelationshipSchema(BaseModel):
-    id: str = Field(default=..., description="Related object ID")
+    id: Optional[str] = Field(default=None, description="Related object ID")
+    lid: Optional[str] = Field(default=None, description="Local id of the related resource object")
     type: str = Field(default=..., description="Type of the related resource object")
 
 

@@ -2,7 +2,6 @@ from http import HTTPStatus
 from typing import Any, Callable, Iterable, Optional, Type
 
 from ninja import NinjaAPI, Router
-from pydantic import BaseModel
 
 from django_ninja_jsonapi.api.endpoint_builder import EndpointsBuilder
 from django_ninja_jsonapi.api.schemas import ResourceData
@@ -11,6 +10,7 @@ from django_ninja_jsonapi.data_typing import TypeModel
 from django_ninja_jsonapi.exceptions import HTTPException
 from django_ninja_jsonapi.exceptions.handlers import base_exception_handler
 from django_ninja_jsonapi.renderers import JSONAPIRenderer
+from django_ninja_jsonapi.schema_base import BaseModel
 from django_ninja_jsonapi.schema_builder import SchemaBuilder
 from django_ninja_jsonapi.storages.models_storage import models_storage
 from django_ninja_jsonapi.storages.schemas_storage import schemas_storage

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Optional, Type
+from typing import TYPE_CHECKING, Any, Callable, Optional, Type
 
 from pydantic import BaseModel, field_validator, model_validator
 from pydantic._internal._decorators import PydanticDescriptorProxy
@@ -36,9 +36,9 @@ def extract_validators(
                 continue
             validator_config = field_validator(field_name, mode=validator.info.mode)
 
-            func = validator.func.__func__ if hasattr(validator.func, "__func__") else validator.func
+            func: Any = validator.func.__func__ if hasattr(validator.func, "__func__") else validator.func
 
-            field_validators[name] = validator_config(func)
+            field_validators[name] = validator_config(func)  # ty: ignore[invalid-argument-type]
 
     # model validators
     for name, validator in validators.model_validators.items():
@@ -46,6 +46,6 @@ def extract_validators(
 
         func = validator.func.__func__ if hasattr(validator.func, "__func__") else validator.func
 
-        model_validators[name] = validator_config(func)
+        model_validators[name] = validator_config(func)  # ty: ignore[invalid-argument-type]
 
     return field_validators, model_validators

@@ -96,9 +96,9 @@ def _build_relationship_identifier_model(rel_config: JSONAPIRelationshipConfig) 
 
 def _build_relationship_fields(
     relationships: dict[str, JSONAPIRelationshipConfig],
-) -> dict[str, tuple[type, Any]]:
+) -> dict[str, tuple[Any, Any]]:
     """Build pydantic field definitions for each relationship."""
-    fields: dict[str, tuple[type, Any]] = {}
+    fields: dict[str, tuple[Any, Any]] = {}
 
     for rel_name, rel_config in relationships.items():
         identifier = _build_relationship_identifier_model(rel_config)
@@ -106,7 +106,7 @@ def _build_relationship_fields(
         if rel_config.many:
             data_model = create_model(
                 f"{rel_name.title().replace('-', '')}RelToMany",
-                data=(list[identifier], ...),
+                data=(list[identifier], ...),  # ty: ignore[invalid-type-form]
                 links=(Optional[RelationshipLinks], None),
             )
         else:
@@ -116,7 +116,7 @@ def _build_relationship_fields(
                 links=(Optional[RelationshipLinks], None),
             )
 
-        fields[rel_name] = (Optional[data_model], None)
+        fields[rel_name] = (Optional[data_model], None)  # ty: ignore[invalid-type-form]
 
     return fields
 
@@ -153,7 +153,7 @@ def jsonapi_response(
         return _RESPONSE_CACHE[key]
 
     # --- attributes schema (strip id and relationship keys) ---
-    attr_fields: dict[str, tuple[type, Any]] = {}
+    attr_fields: dict[str, Any] = {}
     rel_keys = set(rels.keys())
     for field_name, field_info in schema.model_fields.items():
         if field_name == "id" or field_name in rel_keys:
@@ -170,7 +170,7 @@ def jsonapi_response(
     rel_field_defs = _build_relationship_fields(rels) if rels else {}
 
     # --- resource object ---
-    resource_object_fields: dict[str, tuple[type, Any]] = {
+    resource_object_fields: dict[str, Any] = {
         "id": (str, Field(description="Resource object ID", examples=["1"])),
         "type": (Literal[resource_type], Field(default=resource_type, description="Resource type")),  # type: ignore[valid-type]
         "attributes": (attributes_model, Field(description="Resource object attributes")),
@@ -178,7 +178,7 @@ def jsonapi_response(
     }
 
     if rel_field_defs:
-        relationships_model = create_model(
+        relationships_model = create_model(  # ty: ignore[no-matching-overload]
             f"{schema_name}Relationships",
             **rel_field_defs,
         )
@@ -200,15 +200,15 @@ def jsonapi_response(
             totalPages=(Optional[int], Field(default=None, alias="totalPages", examples=[5])),
         )
     else:
-        meta_model = None  # type: ignore[assignment]
+        meta_model = None
 
     # --- top-level document ---
-    doc_fields: dict[str, tuple[type, Any]] = {}
+    doc_fields: dict[str, Any] = {}
 
     if many:
         doc_fields["data"] = (list[resource_object_model], Field(description="Resource objects collection"))
         doc_fields["links"] = (Optional[DocumentLinks], Field(default=None, description="Top level document links"))
-        doc_fields["meta"] = (Optional[meta_model], Field(default=None, description="JSON:API metadata"))
+        doc_fields["meta"] = (Optional[meta_model], Field(default=None, description="JSON:API metadata"))  # ty: ignore[invalid-type-form]
     else:
         doc_fields["data"] = (resource_object_model, Field(description="Resource object data"))
         doc_fields["links"] = (Optional[ResourceLinks], Field(default=None, description="Top level document links"))
@@ -276,7 +276,7 @@ def jsonapi_body(
     rel_field_defs = _build_relationship_fields(rels) if rels else {}
 
     # --- data item ---
-    data_fields: dict[str, tuple[type, Any]] = {
+    data_fields: dict[str, Any] = {
         "type": (Literal[resource_type], Field(default=resource_type, description="Resource type")),  # type: ignore[valid-type]
         "attributes": (schema, Field(description="Resource object attributes")),
     }
@@ -285,7 +285,7 @@ def jsonapi_body(
         data_fields["id"] = (Optional[str], Field(default=None, description="Resource object ID"))
 
     if rel_field_defs:
-        relationships_model = create_model(
+        relationships_model = create_model(  # ty: ignore[no-matching-overload]
             f"{schema_name}InRelationships",
             **rel_field_defs,
         )

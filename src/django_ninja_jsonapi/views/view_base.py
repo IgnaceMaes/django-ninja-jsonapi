@@ -2,7 +2,7 @@ import asyncio
 import inspect
 import logging
 from functools import partial
-from typing import Any, Callable, ClassVar, Iterable, Optional, Type
+from typing import Any, ClassVar, Optional, Type
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 from django.http import HttpRequest as Request
@@ -16,7 +16,6 @@ from django_ninja_jsonapi.inflection import format_keys
 from django_ninja_jsonapi.inflection import get_formatter as get_inflection_formatter
 from django_ninja_jsonapi.querystring import QueryStringManager
 from django_ninja_jsonapi.schema import BaseJSONAPIItemInSchema
-from django_ninja_jsonapi.schema_base import BaseModel
 from django_ninja_jsonapi.storages.models_storage import models_storage
 from django_ninja_jsonapi.storages.schemas_storage import schemas_storage
 from django_ninja_jsonapi.types_metadata import RelationshipInfo
@@ -296,8 +295,8 @@ class ViewBase:
 
     async def _run_handler(
         self,
-        handler: Callable,
-        dto: Optional[BaseModel] = None,
+        handler: Any,
+        dto: Optional[PydanticBaseModel] = None,
     ):
         handler = partial(handler, self, dto) if dto is not None else partial(handler, self)
 
@@ -507,9 +506,10 @@ class ViewBase:
 
         if include_fields is None or not (field_schemas := include_fields.get(resource_type)):
             data_schema = schemas_storage.get_data_schema(resource_type, operation_type="get")
+            assert data_schema is not None
             result = data_schema(
                 id=object_id,
-                attributes=attrs_schema.model_validate(db_item),
+                attributes=attrs_schema.model_validate(db_item),  # ty: ignore[unresolved-attribute]
             ).model_dump(by_alias=True)
 
             for meta_field in meta_fields:
@@ -592,7 +592,7 @@ class ViewBase:
         db_items: list[TypeModel],
         items_data: list[dict],
         resource_type: str,
-        include_paths: list[Iterable[str]],
+        include_paths: list[list[str]],
         include_fields: dict[str, dict[str, Type[TypeSchema]]],
         result_included: Optional[dict] = None,
     ) -> dict[tuple[str, str], dict]:
@@ -609,7 +609,7 @@ class ViewBase:
 
             for path in include_paths:
                 target_relationship, *include_path = path
-                info: RelationshipInfo = schemas_storage.get_relationship_info(
+                info: Optional[RelationshipInfo] = schemas_storage.get_relationship_info(
                     resource_type=resource_type,
                     operation_type="get",
                     field_name=target_relationship,
