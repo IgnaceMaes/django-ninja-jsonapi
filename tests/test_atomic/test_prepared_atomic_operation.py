@@ -168,7 +168,7 @@ async def test_operation_remove_requires_ref_id():
         resource_type="user",
     )
 
-    with pytest.raises(ValueError, match="Atomic remove operation requires target resource id"):
+    with pytest.raises(ValueError, match="must contain an 'id'"):
         await op.handle(DummyDL())
 
 

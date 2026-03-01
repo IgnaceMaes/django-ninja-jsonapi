@@ -126,14 +126,12 @@ class BaseDataLayer:
 
     async def update_object(self, obj, data_update: BaseJSONAPIItemInSchema, view_kwargs: dict):
         """
-        Update an object
+        Update an object.
 
-        :param obj: an object
+        :param obj: an object from data layer
         :param data_update: the data validated by schemas
         :param view_kwargs: kwargs from the resource view
-        :return boolean: True if object have changed else False
         """
-        # TODO: update doc
         raise NotImplementedError
 
     async def delete_object(self, obj, view_kwargs):
@@ -326,7 +324,12 @@ class BaseDataLayer:
         raise NotImplementedError
 
     async def delete_objects(self, objects: list[TypeModel], view_kwargs):
-        # TODO: doc
+        """
+        Delete multiple items through the data layer.
+
+        :param objects: list of model objects to delete
+        :param view_kwargs: kwargs from the resource view
+        """
         raise NotImplementedError
 
     async def before_delete_objects(self, objects: list[TypeModel], view_kwargs: dict):

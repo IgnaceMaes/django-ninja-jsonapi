@@ -14,8 +14,10 @@ class ResourceData(BaseModel):
     source_schema: Type[TypeSchema]
     schema_in_post: Optional[Type[BaseModel]]
     schema_in_post_data: Type[BaseModel]
+    schema_in_post_envelope: Type[BaseModel]
     schema_in_patch: Optional[Type[BaseModel]]
     schema_in_patch_data: Type[BaseModel]
+    schema_in_patch_envelope: Type[BaseModel]
     detail_response_schema: Type[BaseModel]
     list_response_schema: Type[BaseModel]
     pagination_default_size: Optional[int] = 20

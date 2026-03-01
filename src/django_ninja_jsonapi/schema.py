@@ -54,10 +54,10 @@ class BaseJSONAPIItemSchema(BaseModel):
 
 class BaseJSONAPIItemInSchema(BaseJSONAPIItemSchema):
     """
-    Schema for post/patch method
+    Schema for post/patch method.
 
-    TODO POST: optionally accept custom id for object https://jsonapi.org/format/#crud-creating-client-ids
-    TODO PATCH: accept object id (maybe create a new separate schema)
+    Post: optionally accept custom id via ClientCanSetId metadata.
+    Patch: id is required to identify the resource being updated.
     """
 
     attributes: TypeSchema = Field(description="Resource object attributes")
@@ -141,7 +141,7 @@ class JSONAPISchemaIntrospectionError(Exception):
     pass
 
 
-# todo: when 3.9 support is dropped, return back `slots=True to JSONAPIObjectSchemas dataclass`
+# Note: when 3.9 support is dropped, add `slots=True` to JSONAPIObjectSchemas dataclass
 
 
 @dataclass(frozen=True)
@@ -195,8 +195,7 @@ def get_model_field(schema: Type["TypeSchema"], field: str) -> str:
     """
     Get the model field of a schema field.
 
-    # todo: use alias (custom names)?
-       For example:
+    For example:
 
     class Computer:
         user = relationship(User)

@@ -15,9 +15,11 @@ from .json_api import (
     InvalidInclude,
     InvalidSort,
     InvalidType,
+    NotAcceptable,
     ObjectNotFound,
     RelatedObjectNotFound,
     RelationNotFound,
+    UnsupportedMediaType,
 )
 
 __all__ = [
@@ -33,7 +35,9 @@ __all__ = [
     "InvalidInclude",
     "InvalidSort",
     "InvalidType",
+    "NotAcceptable",
     "ObjectNotFound",
     "RelatedObjectNotFound",
     "RelationNotFound",
+    "UnsupportedMediaType",
 ]

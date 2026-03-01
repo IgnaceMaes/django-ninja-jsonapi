@@ -24,7 +24,7 @@ async def test_catch_exc_on_operation_handle_wraps_value_error_to_http_exception
         await fn(operation=operation)
 
     assert exc_info.value.status_code == 422
-    assert "Validation error on operation add" in exc_info.value.as_dict["detail"]["message"]
+    assert "Validation error on operation add" in exc_info.value.as_dict["detail"]
 
 
 def test_current_atomic_operation_context_var_roundtrip():

@@ -189,4 +189,18 @@ class Forbidden(HTTPException):
     status_code = HTTPStatus.FORBIDDEN
 
 
+class UnsupportedMediaType(HTTPException):
+    """415 Unsupported Media Type — Content-Type has unsupported parameters."""
+
+    title = "Unsupported Media Type"
+    status_code = HTTPStatus.UNSUPPORTED_MEDIA_TYPE
+
+
+class NotAcceptable(HTTPException):
+    """406 Not Acceptable — Accept header cannot be satisfied."""
+
+    title = "Not Acceptable"
+    status_code = HTTPStatus.NOT_ACCEPTABLE
+
+
 JSONAPIException = HTTPException

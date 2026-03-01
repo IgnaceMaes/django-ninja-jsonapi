@@ -74,7 +74,6 @@ class AtomicOperationRef(BaseModel):
             "- (type, id, relationship)\n"
             "- (type, lid, relationship)"
         )
-        # TODO: pydantic V2
         raise ValueError(msg)
 
 
@@ -146,7 +145,6 @@ class AtomicOperation(BaseModel):
             "An operation object MAY contain either of the following members,"
             "but not both, to specify the target of the operation (ref, href)"
         )
-        # TODO: pydantic V2
         raise ValueError(msg)
 
     @classmethod
