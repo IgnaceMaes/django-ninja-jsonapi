@@ -2,6 +2,31 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.0](https://github.com/IgnaceMaes/django-ninja-jsonapi/compare/v0.3.0...v0.4.0) (2026-03-01)
+
+
+### Features
+
+* bulk delete opt-in, other fixes ([064221c](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/064221cdc7682d68aabc900dcbc205ff281a022a))
+* jsonapi_resource ([7c4d213](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/7c4d213ecf5ebfb9886687504e0133c12fc82596))
+* response ([a276435](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/a276435e340e87ee7a853cef062619a1f2234a45))
+* standalone renderer ([224870a](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/224870af51a88a349c9036cf361bcd77471ca015))
+* standalone renderer ([60d3e04](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/60d3e0465003a695f92466b4c6ae3b3e9900b432))
+
+
+### Bug Fixes
+
+* lint ([41e13ac](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/41e13acbe4c89d357e7639e7d64db737837a48e7))
+* lint ([2d9963b](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/2d9963bc1e934694e59b8918da105c03a5cff8a8))
+
+
+### Documentation
+
+* fix ([6d1b7df](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/6d1b7df4eb11ff98cf4ced44b120170e552042d0))
+* structure ([ac3ca46](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/ac3ca46408ddb06ccf3d80aadbdff62676f56e58))
+* update with new feats ([e8ecf2f](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/e8ecf2fa8361cf89ff04534ea0551b554f5fd25f))
+* zensical ([ae195c4](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/ae195c472cada643d2dbd8b58463d4a0a8028607))
+
 ## [0.3.0](https://github.com/IgnaceMaes/django-ninja-jsonapi/compare/v0.2.0...v0.3.0) (2026-02-22)
 
 
