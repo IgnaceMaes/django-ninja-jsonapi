@@ -2,6 +2,7 @@
 name = "django-ninja-jsonapi"
 version = "0.3.0"
 description = "JSON:API toolkit for Django Ninja"
+license = { file = "LICENSE" }
 readme = "README.md"
 authors = [
     { name = "Ignace Maes", email = "10243652+IgnaceMaes@users.noreply.github.com" }
