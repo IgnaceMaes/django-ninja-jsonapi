@@ -35,6 +35,26 @@ class JSONAPIIncludedEntry:
     config: JSONAPIResourceConfig
 
 
+def normalize_relationships(
+    relationships: dict[str, JSONAPIRelationshipConfig | dict[str, Any]] | None,
+) -> dict[str, JSONAPIRelationshipConfig]:
+    """Convert a dict of relationship configs (dataclass or plain dict) to normalized form."""
+    if not relationships:
+        return {}
+
+    normalized: dict[str, JSONAPIRelationshipConfig] = {}
+    for name, value in relationships.items():
+        if isinstance(value, JSONAPIRelationshipConfig):
+            normalized[name] = value
+        else:
+            normalized[name] = JSONAPIRelationshipConfig(
+                resource_type=str(value["resource_type"]),
+                many=bool(value.get("many", False)),
+                id_field=str(value.get("id_field", "id")),
+            )
+    return normalized
+
+
 class JSONAPIRenderer(JSONRenderer):
     media_type = JSONAPI_MEDIA_TYPE
 
@@ -284,9 +304,13 @@ class JSONAPIRenderer(JSONRenderer):
                 for field in item._meta.get_fields():
                     if not hasattr(field, "attname"):
                         continue
-                    data[field.attname if field.attname != field.name + "_id" else field.name] = getattr(
-                        item, field.attname, None
-                    )
+                    if isinstance(field, django_models.ForeignKey):
+                        # Store FK as {"id": value} so it's compatible with
+                        # JSON:API relationship handling.
+                        fk_val = getattr(item, field.attname, None)
+                        data[field.name] = {"id": fk_val} if fk_val is not None else None
+                    else:
+                        data[field.attname] = getattr(item, field.attname, None)
                 return data
         except ImportError:  # pragma: no cover
             pass

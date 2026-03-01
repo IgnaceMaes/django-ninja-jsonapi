@@ -75,7 +75,11 @@ def get_article(request, article_id: int):
     return ArticleSchema(id=article_id, title="Hello")
 ```
 
-Django model instances are also supported. The renderer converts them to dicts automatically.
+Django model instances are also supported. The renderer converts them to dicts
+automatically. Foreign-key fields are serialized as `{"id": <pk>}` so they
+work with `relationships=` configuration out of the box. Many-to-many and
+reverse relations are **not** included — for those, return a dict or Pydantic
+model instead.
 
 ## Relationships
 

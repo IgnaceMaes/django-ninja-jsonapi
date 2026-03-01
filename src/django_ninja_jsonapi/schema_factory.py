@@ -8,12 +8,11 @@ Generate Pydantic models that represent JSON:API document structures so that:
 
 from __future__ import annotations
 
-import hashlib
 from typing import Any, Literal, Optional, Type
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
 
-from django_ninja_jsonapi.renderers import JSONAPIRelationshipConfig
+from django_ninja_jsonapi.renderers import JSONAPIRelationshipConfig, normalize_relationships
 
 _RESPONSE_CACHE: dict[str, Type[BaseModel]] = {}
 _BODY_CACHE: dict[str, Type[BaseModel]] = {}
@@ -31,27 +30,7 @@ def _cache_key(
     if relationships:
         parts = sorted(f"{k}:{v.resource_type}:{v.many}:{v.id_field}" for k, v in relationships.items())
         rel_repr = "|".join(parts)
-    raw = f"{schema.__module__}.{schema.__qualname__}:{resource_type}:{many}:{rel_repr}:{suffix}"
-    return hashlib.md5(raw.encode()).hexdigest()
-
-
-def _normalize_relationships(
-    relationships: dict[str, JSONAPIRelationshipConfig | dict[str, Any]] | None,
-) -> dict[str, JSONAPIRelationshipConfig]:
-    if not relationships:
-        return {}
-
-    normalized: dict[str, JSONAPIRelationshipConfig] = {}
-    for name, value in relationships.items():
-        if isinstance(value, JSONAPIRelationshipConfig):
-            normalized[name] = value
-        else:
-            normalized[name] = JSONAPIRelationshipConfig(
-                resource_type=str(value["resource_type"]),
-                many=bool(value.get("many", False)),
-                id_field=str(value.get("id_field", "id")),
-            )
-    return normalized
+    return f"{schema.__module__}.{schema.__qualname__}:{resource_type}:{many}:{rel_repr}:{suffix}"
 
 
 def _build_relationship_identifier_model(rel_config: JSONAPIRelationshipConfig) -> Type[BaseModel]:
@@ -117,7 +96,7 @@ def jsonapi_response(
     (``data``, ``links``, ``jsonapi``, ``meta``, ``included``) so that
     OpenAPI / Swagger UI shows the correct response shape.
     """
-    rels = _normalize_relationships(relationships)
+    rels = normalize_relationships(relationships)
     key = _cache_key(schema, resource_type, many=many, relationships=rels, suffix="response")
     if key in _RESPONSE_CACHE:
         return _RESPONSE_CACHE[key]
@@ -164,14 +143,14 @@ def jsonapi_response(
 
     # --- jsonapi object ---
     jsonapi_object_model = create_model(
-        "JSONAPIObject",
+        f"{schema_name}JsonApiVersion",
         version=(str, Field(default="1.0", description="JSON:API version")),
     )
 
     # --- meta ---
     if many:
         meta_model = create_model(
-            "JSONAPIListMeta",
+            f"{schema_name}ListMeta",
             count=(Optional[int], None),
             totalPages=(Optional[int], Field(default=None, alias="totalPages")),
         )
@@ -238,7 +217,7 @@ def jsonapi_body(
             }
         }
     """
-    rels = _normalize_relationships(relationships)
+    rels = normalize_relationships(relationships)
     key = _cache_key(schema, resource_type, relationships=rels, suffix=f"body:allow_id={allow_id}")
     if key in _BODY_CACHE:
         return _BODY_CACHE[key]

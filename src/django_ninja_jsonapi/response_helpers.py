@@ -13,6 +13,7 @@ from django_ninja_jsonapi.renderers import (
     JSONAPIIncludedEntry,
     JSONAPIRelationshipConfig,
     JSONAPIResourceConfig,
+    normalize_relationships,
 )
 
 
@@ -27,7 +28,7 @@ def jsonapi_include(
     config = JSONAPIResourceConfig(
         resource_type=resource_type,
         id_field=id_field,
-        relationships=_normalize_relationships(relationships),
+        relationships=normalize_relationships(relationships),
     )
     current: list[JSONAPIIncludedEntry] = list(getattr(request, REQUEST_JSONAPI_INCLUDED_ATTR, []) or [])
     current.append(JSONAPIIncludedEntry(data=data, config=config))
@@ -46,25 +47,7 @@ def jsonapi_links(request: HttpRequest, **links: str) -> None:
     setattr(request, REQUEST_JSONAPI_LINKS_ATTR, current_links)
 
 
-def _normalize_relationships(
-    relationships: dict[str, JSONAPIRelationshipConfig | dict[str, Any]] | None,
-) -> dict[str, JSONAPIRelationshipConfig]:
-    if not relationships:
-        return {}
 
-    normalized: dict[str, JSONAPIRelationshipConfig] = {}
-    for relationship_name, relationship_value in relationships.items():
-        if isinstance(relationship_value, JSONAPIRelationshipConfig):
-            normalized[relationship_name] = relationship_value
-            continue
-
-        normalized[relationship_name] = JSONAPIRelationshipConfig(
-            resource_type=str(relationship_value["resource_type"]),
-            many=bool(relationship_value.get("many", False)),
-            id_field=str(relationship_value.get("id_field", "id")),
-        )
-
-    return normalized
 
 
 # ---------------------------------------------------------------------------
@@ -82,6 +65,8 @@ def _build_page_url(request: HttpRequest, page_params: dict[str, str]) -> str:
         merged[key] = values[-1] if len(values) == 1 else values
     merged.update(page_params)
     qs = urlencode(merged, doseq=True)
+    # JSON:API convention: keep brackets unencoded in query strings
+    qs = qs.replace("%5B", "[").replace("%5D", "]")
     base = request.build_absolute_uri(request.path)
     return f"{base}?{qs}" if qs else base
 

@@ -6,7 +6,12 @@ from typing import Any, Callable
 
 from django.http import HttpRequest
 
-from django_ninja_jsonapi.renderers import REQUEST_JSONAPI_CONFIG_ATTR, JSONAPIRelationshipConfig, JSONAPIResourceConfig
+from django_ninja_jsonapi.renderers import (
+    REQUEST_JSONAPI_CONFIG_ATTR,
+    JSONAPIRelationshipConfig,
+    JSONAPIResourceConfig,
+    normalize_relationships,
+)
 
 
 def jsonapi_resource(
@@ -17,7 +22,7 @@ def jsonapi_resource(
     jsonapi_version: str = "1.0",
     relationships: dict[str, JSONAPIRelationshipConfig | dict[str, Any]] | None = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    relationship_config = _normalize_relationships(relationships)
+    relationship_config = normalize_relationships(relationships)
     config = JSONAPIResourceConfig(
         resource_type=resource_type,
         id_field=id_field,
@@ -61,22 +66,4 @@ def _extract_request(*, args: tuple[Any, ...], kwargs: dict[str, Any]) -> HttpRe
     raise ValueError(msg)
 
 
-def _normalize_relationships(
-    relationships: dict[str, JSONAPIRelationshipConfig | dict[str, Any]] | None,
-) -> dict[str, JSONAPIRelationshipConfig]:
-    if not relationships:
-        return {}
 
-    normalized: dict[str, JSONAPIRelationshipConfig] = {}
-    for relationship_name, relationship_value in relationships.items():
-        if isinstance(relationship_value, JSONAPIRelationshipConfig):
-            normalized[relationship_name] = relationship_value
-            continue
-
-        normalized[relationship_name] = JSONAPIRelationshipConfig(
-            resource_type=str(relationship_value["resource_type"]),
-            many=bool(relationship_value.get("many", False)),
-            id_field=str(relationship_value.get("id_field", "id")),
-        )
-
-    return normalized

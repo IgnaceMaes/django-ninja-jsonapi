@@ -174,3 +174,88 @@ def test_renderer_rejects_unsupported_types():
 
     with pytest.raises(TypeError, match="JSON:API renderer expects"):
         _render_payload(request, "not a dict or model")
+
+
+# ---------------------------------------------------------------------------
+# Auto-serialization: Django model instances
+# ---------------------------------------------------------------------------
+
+
+def _make_fake_django_model(fields_dict, *, fk_fields=None):
+    """Build a minimal object that quacks like a Django Model for _coerce_to_dict.
+
+    ``fields_dict`` maps field names to values (regular fields).
+    ``fk_fields`` maps field names to FK target values – these become
+    ForeignKey-like field descriptors.
+    """
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    from django.db import models as django_models
+
+    fk_fields = fk_fields or {}
+    meta_fields = []
+
+    for name, _value in fields_dict.items():
+        field = SimpleNamespace(name=name, attname=name)
+        meta_fields.append(field)
+
+    for name, _value in fk_fields.items():
+        field = MagicMock(spec=django_models.ForeignKey)
+        field.name = name
+        field.attname = f"{name}_id"
+        meta_fields.append(field)
+
+    meta = SimpleNamespace(get_fields=lambda: meta_fields)
+
+    obj = MagicMock(spec=django_models.Model)
+    obj._meta = meta
+    # Set attribute access for regular + FK attnames
+    for name, value in fields_dict.items():
+        setattr(obj, name, value)
+    for name, value in fk_fields.items():
+        setattr(obj, f"{name}_id", value)
+
+    return obj
+
+
+def test_renderer_accepts_django_model_instance():
+    """Verify _coerce_to_dict handles a Django Model instance."""
+    obj = _make_fake_django_model({"id": 42, "username": "alice", "email": "alice@example.com"})
+
+    request = RequestFactory().get("/users/42/")
+    setattr(request, REQUEST_JSONAPI_CONFIG_ATTR, JSONAPIResourceConfig(resource_type="users"))
+
+    result = _render_payload(request, obj)
+
+    assert result["data"]["id"] == "42"
+    assert result["data"]["type"] == "users"
+    assert result["data"]["attributes"]["username"] == "alice"
+    assert result["data"]["attributes"]["email"] == "alice@example.com"
+
+
+def test_renderer_django_model_fk_serialized_as_relationship_dict():
+    """FK fields should be serialized as {"id": pk} for relationship compat."""
+    obj = _make_fake_django_model(
+        {"id": 1, "title": "Hello"},
+        fk_fields={"author": 9},
+    )
+
+    result = JSONAPIRenderer._coerce_to_dict(obj)
+
+    assert result["id"] == 1
+    assert result["title"] == "Hello"
+    # FK should be {"id": <pk>} — ready for relationship handling.
+    assert result["author"] == {"id": 9}
+
+
+def test_renderer_django_model_fk_none_serialized_as_none():
+    """A nullable FK with None value should be serialized as None."""
+    obj = _make_fake_django_model(
+        {"id": 1, "title": "Hello"},
+        fk_fields={"author": None},
+    )
+
+    result = JSONAPIRenderer._coerce_to_dict(obj)
+
+    assert result["author"] is None
