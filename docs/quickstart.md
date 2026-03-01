@@ -2,6 +2,8 @@
 
 This guide shows a complete Django Ninja setup with two related resources (`customer` and `computer`) and demonstrates CRUD + relationship workflows.
 
+If you prefer to define endpoints manually and only use JSON:API response formatting, see [Standalone renderer](standalone_renderer.md).
+
 ## 1) Install
 
 ```bash

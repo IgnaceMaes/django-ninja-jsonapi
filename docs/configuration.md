@@ -6,7 +6,8 @@
 
 ```python
 NINJA_JSONAPI = {
-    "MAX_PAGE_SIZE": 20,
+    "DEFAULT_PAGE_SIZE": 20,
+    "MAX_PAGE_SIZE": 100,
     "MAX_INCLUDE_DEPTH": 3,
     "ALLOW_DISABLE_PAGINATION": False,
     "INCLUDE_JSONAPI_OBJECT": False,
@@ -16,12 +17,18 @@ NINJA_JSONAPI = {
 
 ## Keys
 
-- `MAX_PAGE_SIZE`: hard upper limit for `page[size]`.
+- `DEFAULT_PAGE_SIZE`: default number of items per page when the client
+  doesn't send `page[size]`.  Used by both `ApplicationBuilder` views and the
+  standalone `jsonapi_paginate()` helper.
+- `MAX_PAGE_SIZE`: hard upper limit for `page[size]`.  Client-requested sizes
+  above this value are clamped silently.
 - `MAX_INCLUDE_DEPTH`: maximum include chain depth (for example `a.b.c`).
 - `ALLOW_DISABLE_PAGINATION`: allows/disallows `page[size]=0`.
     - When `True`, `page[size]=0` disables pagination.
     - When `False`, `page[size]=0` falls back to the default page size.
-- `INCLUDE_JSONAPI_OBJECT`: when `True`, adds top-level `jsonapi` object to responses.
+- `INCLUDE_JSONAPI_OBJECT`: when `True`, adds top-level `jsonapi` object to
+  responses.  Applies to both `ApplicationBuilder` and standalone
+  `@jsonapi_resource` endpoints.
 - `JSONAPI_VERSION`: version string used when `INCLUDE_JSONAPI_OBJECT=True`.
 
 ## Practical guidance
