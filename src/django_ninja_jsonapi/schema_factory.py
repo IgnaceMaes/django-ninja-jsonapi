@@ -178,7 +178,7 @@ def _build_relationship_fields(
         else:
             data_model = create_model(
                 f"{rel_name.title().replace('-', '')}RelToOne",
-                data=(identifier, ...),
+                data=(Optional[identifier], None),  # ty: ignore[invalid-type-form]
                 links=(Optional[RelationshipLinks], None),
             )
 
@@ -225,10 +225,10 @@ def _wrap_resource(
         relationships: dict[str, Any] = {}
         for rel_name, rel_config in rels.items():
             value = item.get(rel_name)
-            if value is None:
-                continue
             if rel_config.many:
-                if isinstance(value, list):
+                if value is None or (isinstance(value, list) and len(value) == 0):
+                    relationships[rel_name] = {"data": []}
+                elif isinstance(value, list):
                     relationships[rel_name] = {
                         "data": [
                             {"id": str(v.get(rel_config.id_field, "")), "type": rel_config.resource_type}
@@ -238,7 +238,9 @@ def _wrap_resource(
                         ]
                     }
             else:
-                if isinstance(value, dict):
+                if value is None:
+                    relationships[rel_name] = {"data": None}
+                elif isinstance(value, dict):
                     relationships[rel_name] = {
                         "data": {
                             "id": str(value.get(rel_config.id_field, "")),
@@ -247,8 +249,7 @@ def _wrap_resource(
                     }
                 else:
                     relationships[rel_name] = {"data": {"id": str(value), "type": rel_config.resource_type}}
-        if relationships:
-            resource["relationships"] = relationships
+        resource["relationships"] = relationships
 
     return resource
 

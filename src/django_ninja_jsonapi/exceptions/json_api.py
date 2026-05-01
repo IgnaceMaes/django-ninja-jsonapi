@@ -69,7 +69,7 @@ class HTTPException(Exception):
     @property
     def as_dict(self):
         data = {
-            "status_code": self.status_code,
+            "status": str(self.status_code),
             "source": self.source,
             "title": self.title,
             "detail": self._detail,
@@ -179,7 +179,7 @@ class ObjectNotFound(NotFound):
     @property
     def as_dict(self):
         return {
-            "status_code": self.status_code,
+            "status": str(self.status_code),
             "meta": self.source,
             "title": self.title,
             "detail": self._detail,

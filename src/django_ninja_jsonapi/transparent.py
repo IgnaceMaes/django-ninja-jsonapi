@@ -354,6 +354,7 @@ def _build_body_type(
     resource_type: str,
     *,
     relationships: dict[str, JSONAPIRelationshipConfig] | None = None,
+    allow_id: bool = False,
 ) -> type:
     """Build a JSON:API body type for a plain schema."""
     rels: dict[str, Any] | None = None
@@ -362,7 +363,7 @@ def _build_body_type(
             name: {"resource_type": rc.resource_type, "many": rc.many, "id_field": rc.id_field}
             for name, rc in relationships.items()
         }
-    return jsonapi_body(schema, resource_type, relationships=rels)
+    return jsonapi_body(schema, resource_type, relationships=rels, allow_id=allow_id)
 
 
 # ---------------------------------------------------------------------------
@@ -413,7 +414,12 @@ class JsonApiRouter(Router):
                 if rel_name not in rels:
                     rels[rel_name] = rel_config
 
-            body_type = _build_body_type(param_schema, rt, relationships=rels or None)
+            body_type = _build_body_type(
+                param_schema,
+                rt,
+                relationships=rels or None,
+                allow_id=any(m in ("PATCH", "PUT") for m in methods),
+            )
             body_params[param_name] = (rt, param_schema, body_type)
 
         # --- Wrap view function if needed ---

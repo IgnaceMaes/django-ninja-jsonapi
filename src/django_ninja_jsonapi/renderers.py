@@ -93,7 +93,7 @@ class JSONAPIRenderer(JSONRenderer):
                 is_collection=False,
             )
 
-        links = {"self": request.build_absolute_uri(request.get_full_path())}
+        links = {"self": self._build_self_uri(request)}
         links.update(getattr(request, REQUEST_JSONAPI_LINKS_ATTR, {}) or {})
 
         response: dict[str, Any] = {
@@ -119,25 +119,30 @@ class JSONAPIRenderer(JSONRenderer):
         data: dict[str, Any],
         resource_config: JSONAPIResourceConfig,
     ) -> dict[str, Any]:
-        """Merge request-level links, meta, and included into a pre-wrapped JSON:API document."""
+        """Merge request-level links, meta, and included into a pre-wrapped JSON:API document.
+
+        Also fills in self links and relationship links that the response model
+        validator cannot build (it has no access to the request).
+        """
         extra_links = getattr(request, REQUEST_JSONAPI_LINKS_ATTR, None)
         extra_meta = getattr(request, REQUEST_JSONAPI_META_ATTR, None)
         included = self._build_included(request)
 
-        if not extra_links and not extra_meta and not included:
-            return data
-
         merged = dict(data)
 
+        # --- Ensure top-level self link ---
+        top_links = merged.get("links")
+        if not top_links or not isinstance(top_links, dict):
+            top_links = {}
+        else:
+            top_links = dict(top_links)
+        if "self" not in top_links or top_links["self"] is None:
+            top_links["self"] = self._build_self_uri(request)
         if extra_links:
-            existing_links = merged.get("links") or {}
-            if isinstance(existing_links, dict):
-                existing_links = dict(existing_links)
-            else:
-                existing_links = {}
-            existing_links.update(extra_links)
-            merged["links"] = existing_links
+            top_links.update(extra_links)
+        merged["links"] = top_links
 
+        # --- Meta ---
         if extra_meta:
             existing_meta = merged.get("meta") or {}
             if isinstance(existing_meta, dict):
@@ -147,12 +152,85 @@ class JSONAPIRenderer(JSONRenderer):
             existing_meta.update(extra_meta)
             merged["meta"] = existing_meta
 
+        # --- Included ---
         if included:
             existing_included = list(merged.get("included") or [])
             existing_included.extend(included)
             merged["included"] = existing_included
 
-        return merged
+        # --- Add jsonapi object if configured ---
+        if resource_config.include_jsonapi_object and not merged.get("jsonapi"):
+            merged["jsonapi"] = {"version": resource_config.jsonapi_version}
+
+        # --- Fill in resource links and relationship links ---
+        primary = merged.get("data")
+        if isinstance(primary, list):
+            merged["data"] = [
+                self._enrich_resource_object(
+                    resource=r, request=request, resource_config=resource_config, is_collection=True
+                )
+                for r in primary
+            ]
+        elif isinstance(primary, dict):
+            merged["data"] = self._enrich_resource_object(
+                resource=primary, request=request, resource_config=resource_config, is_collection=False
+            )
+
+        # --- Strip null top-level keys ---
+        return {k: v for k, v in merged.items() if v is not None}
+
+    def _enrich_resource_object(
+        self,
+        *,
+        resource: dict[str, Any],
+        request,
+        resource_config: JSONAPIResourceConfig,
+        is_collection: bool,
+    ) -> dict[str, Any]:
+        """Add self links and relationship links to a pre-wrapped resource object."""
+        resource = dict(resource)
+        item_id = resource.get("id", "")
+
+        # Add resource self link
+        res_links = resource.get("links")
+        if not res_links or not isinstance(res_links, dict):
+            res_links = {}
+        else:
+            res_links = dict(res_links)
+        if "self" not in res_links or res_links["self"] is None:
+            res_links["self"] = self._build_item_self_link(
+                request=request,
+                item_id=str(item_id),
+                resource_type=resource_config.resource_type,
+                is_collection=is_collection,
+                use_resource_type_path=False,
+            )
+        resource["links"] = res_links
+
+        # Add relationship links
+        rels = resource.get("relationships")
+        if isinstance(rels, dict):
+            enriched_rels: dict[str, Any] = {}
+            for rel_name, rel_obj in rels.items():
+                if not isinstance(rel_obj, dict):
+                    enriched_rels[rel_name] = rel_obj
+                    continue
+                rel_obj = dict(rel_obj)
+                if "links" not in rel_obj or not rel_obj["links"]:
+                    if is_collection:
+                        relationship_base = self._build_item_path(request.path, str(item_id)).rstrip("/")
+                    else:
+                        path = request.path if request.path.endswith("/") else f"{request.path}/"
+                        relationship_base = path.rstrip("/")
+                    rel_obj["links"] = {
+                        "self": request.build_absolute_uri(relationship_base + f"/relationships/{rel_name}/"),
+                        "related": request.build_absolute_uri(relationship_base + f"/{rel_name}/"),
+                    }
+                enriched_rels[rel_name] = rel_obj
+            resource["relationships"] = enriched_rels
+
+        # Strip null keys from resource
+        return {k: v for k, v in resource.items() if v is not None}
 
     def _build_included(self, request) -> list[dict[str, Any]]:
         included_entries = getattr(request, REQUEST_JSONAPI_INCLUDED_ATTR, None) or []
@@ -331,6 +409,20 @@ class JSONAPIRenderer(JSONRenderer):
             item_path = request_path if request_path.endswith("/") else f"{request_path}/"
 
         return request.build_absolute_uri(item_path)
+
+    @staticmethod
+    def _build_self_uri(request) -> str:
+        """Build the ``self`` URI for the current request.
+
+        Handles test clients where ``get_full_path()`` may not return a string.
+        """
+        try:
+            full_path = request.get_full_path()
+            if not isinstance(full_path, str):
+                full_path = request.path
+        except (TypeError, AttributeError):
+            full_path = request.path
+        return request.build_absolute_uri(full_path)
 
     @staticmethod
     def _coerce_to_dict(item: Any, *, schema: Any = None) -> dict[str, Any]:

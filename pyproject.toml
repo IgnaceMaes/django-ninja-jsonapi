@@ -53,6 +53,9 @@ DJANGO_SETTINGS_MODULE = "tests.settings"
 pythonpath = [".", "src"]
 django_find_project = false
 
+[tool.ty.src]
+exclude = ["docs/", "examples/"]
+
 [tool.coverage.run]
 branch = true
 source = ["src/django_ninja_jsonapi"]

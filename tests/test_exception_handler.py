@@ -34,7 +34,7 @@ def test_pydantic_validation_exception_handler_returns_jsonapi_errors():
         age: int
 
     try:
-        StrictModel(name=123, age="not-a-number")
+        StrictModel(name=123, age="not-a-number")  # ty: ignore[invalid-argument-type]
     except ValidationError as exc:
         response = pydantic_validation_exception_handler(request, exc)
 
@@ -58,7 +58,7 @@ def test_pydantic_validation_error_pointer_includes_field_location():
         email: str
 
     try:
-        StrictModel()  # missing required field
+        StrictModel()  # ty: ignore[missing-argument]
     except ValidationError as exc:
         response = pydantic_validation_exception_handler(request, exc)
 
@@ -76,7 +76,7 @@ def test_object_does_not_exist_handler_returns_jsonapi_404():
     assert response.status_code == 404
     payload = json.loads(response.content.decode())
     assert "errors" in payload
-    assert payload["errors"][0]["status_code"] == 404
+    assert payload["errors"][0]["status"] == "404"
     assert payload["errors"][0]["title"] == "Not Found"
     assert "does not exist" in payload["errors"][0]["detail"]
     assert response["Content-Type"].startswith(JSONAPI_MEDIA_TYPE)

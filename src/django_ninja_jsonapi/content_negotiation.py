@@ -23,10 +23,11 @@ _JSONAPI_ESSENCE = JSONAPI_MEDIA_TYPE  # "application/vnd.api+json"
 def _parse_media_ranges(header_value: str) -> list[tuple[str, bool]]:
     """
     Parse a Content-Type or Accept header into a list of
-    ``(media_type_essence, has_params)`` tuples.
+    ``(media_type_essence, has_non_jsonapi_params)`` tuples.
 
-    Parameters attached to a media type (e.g. ``charset=utf-8``) are flagged
-    but not preserved — the JSON:API spec only cares whether they exist.
+    Parameters ``ext`` and ``profile`` are allowed by the JSON:API spec and
+    are NOT counted as extra parameters.  Any other parameter (e.g.
+    ``charset=utf-8``) is flagged.
     """
     results: list[tuple[str, bool]] = []
     for part in header_value.split(","):
@@ -35,8 +36,18 @@ def _parse_media_ranges(header_value: str) -> list[tuple[str, bool]]:
             continue
         segments = [s.strip() for s in part.split(";")]
         media_type = segments[0].lower()
-        # "q" is a standard accept-extension, not a media type parameter
-        params = [s for s in segments[1:] if s and not s.startswith("q=")]
+        # "q" is a standard accept-extension, not a media type parameter.
+        # "ext" and "profile" are allowed by the JSON:API spec.
+        params = [
+            s
+            for s in segments[1:]
+            if s
+            and not s.startswith("q=")
+            and not s.startswith("ext=")
+            and not s.startswith('ext="')
+            and not s.startswith("profile=")
+            and not s.startswith('profile="')
+        ]
         results.append((media_type, bool(params)))
     return results
 

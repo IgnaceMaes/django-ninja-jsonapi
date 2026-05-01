@@ -212,7 +212,7 @@ class TestNinjaJsonAPIPost:
         @api.post("/items", response={201: ItemSchema})
         def create_item(request, body: ItemCreateSchema):
             captured["author_id"] = get_rel_id(request, "author")
-            return 201, {"id": 1, "name": body.name, "author": {"id": int(captured["author_id"]), "name": "Alice"}}
+            return 201, {"id": 1, "name": body.name, "author": {"id": int(captured["author_id"]), "name": "Alice"}}  # ty: ignore[invalid-argument-type]
 
         client = TestClient(api)
         response = client.post(
