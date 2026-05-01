@@ -200,7 +200,7 @@ def _build_relationship_fields(
 
 
 def _coerce_item_to_dict(item: Any) -> dict[str, Any] | None:
-    """Coerce a single item (dict, Pydantic model) to a plain dict."""
+    """Coerce a single item (dict, Pydantic model, Django model) to a plain dict."""
     if isinstance(item, dict):
         return item
     try:
@@ -208,6 +208,22 @@ def _coerce_item_to_dict(item: Any) -> dict[str, Any] | None:
 
         if isinstance(item, _PBM):
             return item.model_dump()
+    except ImportError:  # pragma: no cover
+        pass
+    try:
+        from django.db import models as _django_models
+
+        if isinstance(item, _django_models.Model):
+            data: dict[str, Any] = {}
+            for field in item._meta.get_fields():
+                if not hasattr(field, "attname"):
+                    continue
+                if isinstance(field, _django_models.ForeignKey):
+                    fk_val = getattr(item, field.attname, None)
+                    data[field.name] = {"id": fk_val} if fk_val is not None else None
+                else:
+                    data[field.attname] = getattr(item, field.attname, None)
+            return data
     except ImportError:  # pragma: no cover
         pass
     return None
@@ -277,15 +293,22 @@ def _coerce_raw_to_document(
     if isinstance(data, dict) and ("data" in data or "errors" in data or "jsonapi" in data):
         return data
 
-    # Single item (dict or Pydantic model) for a detail endpoint
+    # Single item (dict or Pydantic model or Django model) for a detail endpoint
     coerced = _coerce_item_to_dict(data)
     if coerced is not None and not many:
         return {"data": _wrap_resource(coerced, resource_type=resource_type, rels=rels)}
 
-    # Collection endpoint
-    if isinstance(data, list) and many:
+    # Collection endpoint — handle lists and other iterables (e.g., QuerySets)
+    if many and isinstance(data, (list, tuple)):
+        items_list = data
+    elif many and hasattr(data, "__iter__") and not isinstance(data, (str, bytes, dict)):
+        items_list = list(data)
+    else:
+        items_list = None
+
+    if items_list is not None:
         resources = []
-        for item in data:
+        for item in items_list:
             as_dict = _coerce_item_to_dict(item)
             if as_dict is not None:
                 resources.append(_wrap_resource(as_dict, resource_type=resource_type, rels=rels))

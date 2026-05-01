@@ -415,3 +415,64 @@ class TestJsonapiResponseRawData:
         assert "data" in dumped
         assert dumped["data"]["type"] == "articles"
         assert dumped["data"]["attributes"]["title"] == "Hello"
+
+
+# ---------------------------------------------------------------------------
+# Django model coercion in _coerce_item_to_dict / _coerce_raw_to_document
+# ---------------------------------------------------------------------------
+
+
+def _make_fake_django_model(fields_dict):
+    """Build a minimal object that quacks like a Django Model for coercion."""
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    from django.db import models as django_models
+
+    meta_fields = []
+    for name in fields_dict:
+        meta_fields.append(SimpleNamespace(name=name, attname=name))
+
+    obj = MagicMock(spec=django_models.Model)
+    obj._meta = SimpleNamespace(get_fields=lambda: meta_fields)
+    for name, value in fields_dict.items():
+        setattr(obj, name, value)
+    return obj
+
+
+class TestCoerceItemToDictDjangoModel:
+    """_coerce_item_to_dict must handle Django model instances."""
+
+    def test_single_django_model_coerced_to_dict(self):
+        from django_ninja_jsonapi.schema_factory import _coerce_item_to_dict
+
+        obj = _make_fake_django_model({"id": 1, "title": "Hello"})
+        result = _coerce_item_to_dict(obj)
+        assert result is not None
+        assert result["id"] == 1
+        assert result["title"] == "Hello"
+
+    def test_django_model_in_single_response(self):
+        """jsonapi_response validates a single Django model instance."""
+        ResponseModel = jsonapi_response(ArticleSchema, "articles")
+        obj = _make_fake_django_model({"id": 1, "title": "Test", "body": "Content"})
+
+        doc = ResponseModel.model_validate(obj)
+        assert doc.data.id == "1"
+        assert doc.data.attributes.title == "Test"
+        assert doc.data.attributes.body == "Content"
+
+    def test_django_models_in_list_response(self):
+        """jsonapi_response(many=True) validates a list of Django models."""
+        ResponseModel = jsonapi_response(ArticleSchema, "articles", many=True)
+        items = [
+            _make_fake_django_model({"id": 1, "title": "First", "body": "A"}),
+            _make_fake_django_model({"id": 2, "title": "Second", "body": "B"}),
+        ]
+
+        doc = ResponseModel.model_validate(items)
+        assert len(doc.data) == 2
+        assert doc.data[0].id == "1"
+        assert doc.data[0].attributes.title == "First"
+        assert doc.data[1].id == "2"
+        assert doc.data[1].attributes.title == "Second"
