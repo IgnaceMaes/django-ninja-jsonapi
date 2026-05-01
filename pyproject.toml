@@ -1,6 +1,6 @@
 [project]
 name = "django-ninja-jsonapi"
-version = "0.5.0"
+version = "0.6.0"
 description = "JSON:API toolkit for Django Ninja"
 license = { file = "LICENSE" }
 readme = "README.md"
