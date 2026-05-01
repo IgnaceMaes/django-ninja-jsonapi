@@ -4,9 +4,14 @@ JSON:API toolkit for Django Ninja.
 
 [![CI](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/ci.yml/badge.svg)](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/ci.yml)
 [![Package](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/package.yml/badge.svg)](https://github.com/ignacemaes/django-ninja-jsonapi/actions/workflows/package.yml)
+[![codecov](https://codecov.io/gh/IgnaceMaes/django-ninja-jsonapi/branch/main/graph/badge.svg)](https://codecov.io/gh/IgnaceMaes/django-ninja-jsonapi)
 [![PyPI](https://img.shields.io/pypi/v/django-ninja-jsonapi)](https://pypi.org/project/django-ninja-jsonapi/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/django-ninja-jsonapi.svg?maxAge=180)](https://pypi.org/project/django-ninja-jsonapi/)
+[![Django Versions](https://img.shields.io/pypi/djversions/django-ninja-jsonapi.svg?maxAge=180)](https://pypi.org/project/django-ninja-jsonapi/)
+[![PyPI Monthly Downloads](https://img.shields.io/pypi/dm/django-ninja-jsonapi.svg?maxAge=180)](https://pypi.org/project/django-ninja-jsonapi/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![ty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json)](https://github.com/astral-sh/ty)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
 This project ports the core ideas of `fastapi-jsonapi` to a Django Ninja + Django ORM stack, following the [JSON:API specification](https://jsonapi.org/).
 
