@@ -180,9 +180,7 @@ def _wrap_resource(
                         }
                     }
                 else:
-                    relationships[rel_name] = {
-                        "data": {"id": str(value), "type": rel_config.resource_type}
-                    }
+                    relationships[rel_name] = {"data": {"id": str(value), "type": rel_config.resource_type}}
         if relationships:
             resource["relationships"] = relationships
 

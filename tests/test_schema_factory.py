@@ -397,9 +397,7 @@ class TestJsonapiResponseRawData:
             relationships={"author": {"resource_type": "people"}},
         )
 
-        doc = ResponseModel.model_validate(
-            {"id": 1, "title": "Hello", "author": {"id": 9}}
-        )
+        doc = ResponseModel.model_validate({"id": 1, "title": "Hello", "author": {"id": 9}})
 
         assert doc.data.id == "1"
         assert doc.data.attributes.title == "Hello"
