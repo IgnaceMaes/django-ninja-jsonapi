@@ -1,7 +1,10 @@
 """Tests for NinjaJsonAPI transparent JSON:API layer."""
 
+from types import SimpleNamespace
 from typing import ClassVar
+from unittest.mock import MagicMock
 
+from django.db import models as django_models
 from django.test import RequestFactory
 from ninja.testing import TestClient
 from pydantic import BaseModel, ConfigDict
@@ -12,6 +15,19 @@ from django_ninja_jsonapi.transparent import (
     get_rel_id,
     get_rel_ids,
 )
+
+
+def _make_fake_django_model(fields_dict):
+    """Build a minimal object that quacks like a Django Model."""
+    meta_fields = []
+    for name in fields_dict:
+        meta_fields.append(SimpleNamespace(name=name, attname=name))
+    obj = MagicMock(spec=django_models.Model)
+    obj._meta = SimpleNamespace(get_fields=lambda: meta_fields)
+    for name, value in fields_dict.items():
+        setattr(obj, name, value)
+    return obj
+
 
 # ---------------------------------------------------------------------------
 # Test schemas
@@ -122,6 +138,23 @@ class TestNinjaJsonAPIGet:
         assert data["data"]["type"] == "simples"
         assert data["data"]["attributes"]["name"] == "Test Item"
 
+    def test_get_detail_django_model_instance(self):
+        """A view returning a Django model instance must populate data attributes."""
+        api = NinjaJsonAPI(urls_namespace="test-get-detail-django")
+
+        @api.get("/items/{item_id}", response=SimpleSchema)
+        def get_item(request, item_id: int):
+            return _make_fake_django_model({"id": item_id, "name": "From Django"})
+
+        client = TestClient(api)
+        response = client.get("/items/1")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["data"]["id"] == "1"
+        assert data["data"]["type"] == "simples"
+        assert data["data"]["attributes"]["name"] == "From Django"
+
     def test_get_list_returns_jsonapi_collection(self):
         api = NinjaJsonAPI(urls_namespace="test-get-list")
 
@@ -137,6 +170,26 @@ class TestNinjaJsonAPIGet:
         assert "data" in data
         assert len(data["data"]) == 2
         assert data["data"][0]["type"] == "simples"
+        assert data["data"][1]["attributes"]["name"] == "Two"
+
+    def test_get_list_django_model_instances(self):
+        """A view returning a list of Django model instances must populate data."""
+        api = NinjaJsonAPI(urls_namespace="test-get-list-django")
+
+        @api.get("/items", response=list[SimpleSchema])
+        def list_items(request):
+            return [
+                _make_fake_django_model({"id": 1, "name": "One"}),
+                _make_fake_django_model({"id": 2, "name": "Two"}),
+            ]
+
+        client = TestClient(api)
+        response = client.get("/items")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]) == 2
+        assert data["data"][0]["attributes"]["name"] == "One"
         assert data["data"][1]["attributes"]["name"] == "Two"
 
     def test_get_with_relationships(self):

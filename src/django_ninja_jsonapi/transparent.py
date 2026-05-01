@@ -255,6 +255,51 @@ def _find_body_params(func: Callable[..., Any]) -> dict[str, Type[BaseModel]]:
     return body_params
 
 
+def _coerce_view_result(result: Any, *, response_schema: Type[BaseModel] | None) -> Any:
+    """Coerce Django model instances and QuerySets for Pydantic response validation.
+
+    Django Ninja validates responses via Pydantic ``model_validate`` on a
+    wrapper schema.  When the response type is a ``jsonapi_response()`` model
+    the before-validator only fires for *dict* and *list* inputs — single
+    Django model instances are rejected before the validator runs.  We coerce
+    them here so that the rest of the pipeline receives plain dicts/lists.
+    """
+    from django.http import HttpResponseBase
+
+    if isinstance(result, HttpResponseBase):
+        return result
+
+    if isinstance(result, tuple) and len(result) == 2:
+        status, body = result
+        return (status, _coerce_data_for_validation(body, response_schema=response_schema))
+
+    return _coerce_data_for_validation(result, response_schema=response_schema)
+
+
+def _coerce_data_for_validation(data: Any, *, response_schema: Type[BaseModel] | None) -> Any:
+    """Convert a single Django Model to a dict or a QuerySet to a list."""
+    try:
+        from django.db.models import Model, QuerySet
+
+        if isinstance(data, QuerySet):
+            return list(data)
+
+        if isinstance(data, Model):
+            if response_schema is not None:
+                try:
+                    return response_schema.model_validate(data, from_attributes=True).model_dump()
+                except Exception:
+                    pass
+            # Fallback: use the renderer's field-level coercion
+            from django_ninja_jsonapi.renderers import JSONAPIRenderer
+
+            return JSONAPIRenderer._coerce_to_dict(data, schema=response_schema)
+    except ImportError:  # pragma: no cover
+        pass
+
+    return data
+
+
 def _wrap_view(
     func: Callable[..., Any],
     *,
@@ -284,7 +329,8 @@ def _wrap_view(
             if resource_config is not None:
                 setattr(request, REQUEST_JSONAPI_CONFIG_ATTR, resource_config)
             _unwrap_body_params(request, kwargs, body_params)
-            return await func(*args, **kwargs)
+            result = await func(*args, **kwargs)
+            return _coerce_view_result(result, response_schema=response_schema)
 
         cast(Any, async_wrapper).__signature__ = new_sig
         return async_wrapper
@@ -295,7 +341,8 @@ def _wrap_view(
         if resource_config is not None:
             setattr(request, REQUEST_JSONAPI_CONFIG_ATTR, resource_config)
         _unwrap_body_params(request, kwargs, body_params)
-        return func(*args, **kwargs)
+        result = func(*args, **kwargs)
+        return _coerce_view_result(result, response_schema=response_schema)
 
     cast(Any, sync_wrapper).__signature__ = new_sig
     return sync_wrapper
