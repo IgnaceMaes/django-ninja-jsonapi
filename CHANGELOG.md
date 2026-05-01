@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.5.0](https://github.com/IgnaceMaes/django-ninja-jsonapi/compare/v0.4.0...v0.5.0) (2026-05-01)
+
+
+### Features
+
+* implement suggestions ([785e912](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/785e9124b902be7594122d80b9ad7e61cf5b26a4))
+* implement suggestions ([edc1075](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/edc1075e0407ae09a3ea43eb225c3b098da81838))
+
 ## [0.4.0](https://github.com/IgnaceMaes/django-ninja-jsonapi/compare/v0.3.0...v0.4.0) (2026-03-01)
 
 
