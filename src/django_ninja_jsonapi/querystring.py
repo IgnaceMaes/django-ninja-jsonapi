@@ -13,12 +13,9 @@ from pydantic import BaseModel, Field, ValidationError
 
 from django_ninja_jsonapi.exceptions import (
     BadRequest,
-    InvalidField,
     InvalidFilters,
     InvalidInclude,
-    InvalidType,
 )
-from django_ninja_jsonapi.storages import schemas_storage
 
 
 class PaginationQueryStringManager(BaseModel):
@@ -266,21 +263,6 @@ class QueryStringManager:
         :raises InvalidField: if result field not in schema.
         """
         fields = self._get_multiple_key_values("fields")
-        for resource_type, field_names in fields.items():
-            if not schemas_storage.has_resource(resource_type):
-                msg = f"Application has no resource with type {resource_type!r}"
-                raise InvalidType(msg)
-
-            schema = schemas_storage.get_attrs_schema(resource_type, "get")
-            assert schema is not None
-
-            for field_name in field_names:
-                if field_name == "":
-                    continue
-
-                if field_name not in schema.model_fields:
-                    msg = f"{schema.__name__} has no attribute {field_name}"
-                    raise InvalidField(msg)
 
         return {resource_type: set(field_names) for resource_type, field_names in fields.items()}
 
