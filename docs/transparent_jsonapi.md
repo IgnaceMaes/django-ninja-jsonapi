@@ -157,7 +157,6 @@ from django_ninja_jsonapi import apply_attributes
 @api.patch("/articles/{id}", response=ArticleSchema)
 def update_article(request, id: int, body: ArticleUpdateSchema):
     article = Article.objects.get(pk=id)
-    # apply_attributes works with both plain schemas and legacy JsonApiBody
     apply_attributes(article, body, extra_update_fields=["updated_dt"])
     return article
 ```

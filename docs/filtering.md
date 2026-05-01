@@ -1,6 +1,6 @@
 # Filtering
 
-Filtering uses the `filter` query parameter and is translated by the data layer.
+Filtering uses the `filter` query parameter. Use `jsonapi_filter(request, queryset)` to apply filters to a Django queryset.
 
 ## Full JSON filter format (single condition)
 
@@ -79,5 +79,4 @@ Top-level filter list items are still AND-combined in order.
 ## Notes
 
 - URL-encode JSON values in production clients.
-- Supported operators are data-layer specific.
 

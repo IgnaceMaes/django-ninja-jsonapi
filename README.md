@@ -13,23 +13,18 @@ JSON:API toolkit for Django Ninja.
 [![ty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json)](https://github.com/astral-sh/ty)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
-This project ports the core ideas of `fastapi-jsonapi` to a Django Ninja + Django ORM stack, following the [JSON:API specification](https://jsonapi.org/).
+This project brings [JSON:API specification](https://jsonapi.org/) support to Django Ninja.
 
 Full documentation is available at [ignacemaes.com/django-ninja-jsonapi](https://ignacemaes.com/django-ninja-jsonapi/).
 
 ## Status
 
-- Working baseline for resource registration and route generation (`GET`, `GET LIST`, `POST`, `PATCH`, `DELETE`).
+- Transparent JSON:API wrapping — write plain Django Ninja views, get JSON:API documents automatically.
+- Auto-detected relationships from Pydantic schema type hints.
 - Strict query parsing for JSON:API-style `filter`, `sort`, `include`, `fields`, and `page` parameters.
 - JSON:API exception payload handling.
-- Atomic operations endpoint wiring (`/operations`).
-- Django ORM data-layer baseline for CRUD + basic relationship handling.
-- Top-level/resource/relationship `links` in responses.
-- Django ORM include optimization (`select_related`/`prefetch_related` split) with optional include mapping overrides.
-- Logical filter groups (`and`/`or`/`not`) and cursor pagination (`page[cursor]`).
 - Content-type negotiation (415/406) per the JSON:API spec.
 - Attribute key inflection (`dasherize` or `camelize`).
-- Auto-generated relationship mutation routes (`POST`/`PATCH`/`DELETE` on to-many, `PATCH` on to-one).
 
 ## Requirements
 
@@ -51,11 +46,15 @@ or
 
 ## Quick start
 
-### 1) Define a Django model and a schema
+### 1) Define a Django model and schemas
 
 ```python
+from typing import ClassVar
+
 from django.db import models
 from pydantic import BaseModel
+
+from django_ninja_jsonapi import JsonApiMeta
 
 
 class Customer(models.Model):
@@ -63,42 +62,41 @@ class Customer(models.Model):
 
 
 class CustomerSchema(BaseModel):
+    id: int
+    name: str
+
+    jsonapi_meta: ClassVar[JsonApiMeta] = JsonApiMeta(resource_type="customers")
+
+
+class CustomerCreateSchema(BaseModel):
     name: str
 ```
 
-### 2) Create a JSON:API view class
+### 2) Create your API with `NinjaJsonAPI`
 
 ```python
-from django_ninja_jsonapi import ViewBaseGeneric
+from django_ninja_jsonapi import NinjaJsonAPI
+
+api = NinjaJsonAPI()
 
 
-class CustomerView(ViewBaseGeneric):
-    pass
+@api.get("/customers", response=list[CustomerSchema])
+def list_customers(request):
+    return Customer.objects.all()
+
+
+@api.get("/customers/{customer_id}", response=CustomerSchema)
+def get_customer(request, customer_id: int):
+    return Customer.objects.get(pk=customer_id)
+
+
+@api.post("/customers", response={201: CustomerSchema})
+def create_customer(request, body: CustomerCreateSchema):
+    customer = Customer.objects.create(**body.model_dump())
+    return 201, customer
 ```
 
-### 3) Register resources with `ApplicationBuilder`
-
-```python
-from ninja import NinjaAPI
-
-from django_ninja_jsonapi import ApplicationBuilder
-
-api = NinjaAPI()
-builder = ApplicationBuilder(api)
-
-builder.add_resource(
-    path="/customers",
-    tags=["customers"],
-    resource_type="customer",
-    view=CustomerView,
-    model=Customer,
-    schema=CustomerSchema,
-)
-
-builder.initialize()
-```
-
-### 4) Mount API in Django URLs
+### 3) Mount API in Django URLs
 
 ```python
 from django.urls import path
@@ -111,47 +109,36 @@ urlpatterns = [
 
 ### Example response
 
-`GET /api/customers/1/`
+`GET /api/customers/1`
 
 ```json
 {
   "data": {
-    "type": "customer",
+    "type": "customers",
     "id": "1",
     "attributes": {
       "name": "Alice"
-    },
-    "links": {
-      "self": "http://localhost:8000/api/customers/1/"
     }
-  },
-  "meta": {
-    "count": 1
   }
 }
 ```
 
-`GET /api/customers/`
+`GET /api/customers`
 
 ```json
 {
   "data": [
     {
-      "type": "customer",
+      "type": "customers",
       "id": "1",
-      "attributes": { "name": "Alice" },
-      "links": { "self": "http://localhost:8000/api/customers/1/" }
+      "attributes": { "name": "Alice" }
     },
     {
-      "type": "customer",
+      "type": "customers",
       "id": "2",
-      "attributes": { "name": "Bob" },
-      "links": { "self": "http://localhost:8000/api/customers/2/" }
+      "attributes": { "name": "Bob" }
     }
-  ],
-  "meta": {
-    "count": 2
-  }
+  ]
 }
 ```
 
