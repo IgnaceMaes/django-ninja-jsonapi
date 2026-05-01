@@ -190,6 +190,8 @@ from django_ninja_jsonapi import (
     get_rel_ids,
     model_schema,
     jsonapi_paginate,
+    jsonapi_pagination,
+    jsonapi_cursor_pagination,
     jsonapi_include,
     jsonapi_meta,
     jsonapi_links,

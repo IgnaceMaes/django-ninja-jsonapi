@@ -12,6 +12,7 @@ NINJA_JSONAPI = {
     "ALLOW_DISABLE_PAGINATION": False,
     "INCLUDE_JSONAPI_OBJECT": False,
     "JSONAPI_VERSION": "1.0",
+    "INFLECTION": None,  # or "dasherize" or "camelize"
 }
 ```
 
@@ -54,17 +55,3 @@ NINJA_JSONAPI = {
 - Unknown query parameters are rejected with `400 Bad Request`.
 - Repeated parameters are rejected for non-`filter` keys (for example repeating `sort` or `page[size]`).
 - Repeating `filter[...]` keys is allowed.
-
-## Resource meta fields
-
-To move selected schema fields into resource `meta`, define `meta_fields`:
-
-```python
-class CustomerSchema(BaseModel):
-    id: int
-    name: str
-    status: str
-
-    class JSONAPIMeta:
-        meta_fields = ["status"]
-```

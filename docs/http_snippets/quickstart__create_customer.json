@@ -6,7 +6,7 @@
   },
   "body": {
     "data": {
-      "type": "customer",
+      "type": "customers",
       "attributes": {
         "name": "John",
         "email": "john@example.com"

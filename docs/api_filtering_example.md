@@ -56,7 +56,7 @@ print(response.json())
 	},
 	"data": [
 		{
-			"type": "customer",
+			"type": "customers",
 			"id": "1",
 			"attributes": {
 				"name": "John",
