@@ -2,28 +2,7 @@
 
 `JsonApiNinja` is a drop-in `NinjaAPI` subclass that makes JSON:API formatting invisible. Your view functions look exactly like plain Django Ninja views — the library handles wrapping responses and unwrapping request bodies automatically.
 
-## Quick comparison
-
-**Before (standalone renderer):**
-
-```python
-from ninja import NinjaAPI
-from django_ninja_jsonapi import setup_jsonapi, jsonapi_resource, jsonapi_response, jsonapi_body
-
-api = NinjaAPI()
-setup_jsonapi(api)
-
-ArticleBody = jsonapi_body(ArticleCreateSchema, "articles")
-
-@api.post("/articles", response={201: jsonapi_response(ArticleSchema, "articles")})
-@jsonapi_resource("articles")
-def create_article(request, body: ArticleBody):
-    attrs = body.data.attributes.model_dump()
-    article = Article.objects.create(**attrs)
-    return 201, article
-```
-
-**After (transparent):**
+## Quick example
 
 ```python
 from django_ninja_jsonapi import JsonApiNinja
@@ -36,7 +15,7 @@ def create_article(request, body: ArticleCreateSchema):
     return 201, article
 ```
 
-Same JSON:API input/output. No decorators, no body wrappers, no `.data.attributes`.
+Plain Pydantic schemas in, JSON:API documents out. No decorators, no body wrappers, no `.data.attributes`.
 
 ## Setup
 
@@ -57,7 +36,7 @@ api = JsonApiNinja(
 - Registers JSON:API exception handlers for `HTTPException` and `ObjectDoesNotExist`
 - Wraps `response=` schemas in JSON:API document structure (for OpenAPI docs)
 - Unwraps incoming JSON:API request bodies so views receive plain schemas
-- Injects `@jsonapi_resource()` config on each request
+- Injects JSON:API resource config on each request
 
 ## Schema configuration with `JsonApiMeta`
 
@@ -267,9 +246,7 @@ def list_articles(request):
     return qs
 ```
 
-## Mixing old and new styles
-
-`JsonApiNinja` is fully backward-compatible. You can still use `@jsonapi_resource()`, `jsonapi_response()`, `jsonapi_body()` explicitly on any endpoint — they take precedence over the transparent layer.
+## Non-JSON:API endpoints
 
 Schemas **without** `jsonapi_meta` are passed through unchanged (no JSON:API wrapping), so you can have both JSON:API and plain JSON endpoints on the same API.
 

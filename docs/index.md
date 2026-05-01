@@ -24,12 +24,10 @@
 - [Installation](installation.md)
 - [Quickstart](quickstart.md)
 - [Transparent JSON:API](transparent_jsonapi.md)
-- [Standalone renderer](standalone_renderer.md)
 
 ### Usage
 
 - [Usage overview](usage.md)
-- [Routing](routing.md)
 - [Configuration](configuration.md)
 - [Relationships](relationships.md)
 - [Filtering](filtering.md)

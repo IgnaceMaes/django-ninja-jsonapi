@@ -4,7 +4,6 @@ This section groups day-to-day JSON:API features and behaviors.
 
 ## Core setup
 
-- [Routing](routing.md)
 - [Configuration](configuration.md)
 - [Data layer](data_layer.md)
 - [Logical data abstraction](logical_data_abstraction.md)
@@ -35,7 +34,4 @@ This section groups day-to-day JSON:API features and behaviors.
 
 ## Helpers and utilities
 
-- [Resource descriptor](resource_descriptor.md)
-- [Body helpers](body_helpers.md)
-- [Schema-aware model coercion](schema_coercion.md)
 - [Model schema factory](model_schema.md)

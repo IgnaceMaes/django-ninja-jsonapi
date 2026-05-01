@@ -3,89 +3,205 @@
 ## Public imports
 
 ```python
-from django_ninja_jsonapi import ApplicationBuilder, QueryStringManager, HTTPException, BadRequest, ViewBaseGeneric
+from django_ninja_jsonapi import (
+    JsonApiNinja,
+    JsonApiMeta,
+    JSONAPIRenderer,
+    QueryStringManager,
+    HTTPException,
+    BadRequest,
+    NotFound,
+    apply_attributes,
+    get_rel_id,
+    get_rel_ids,
+    model_schema,
+    jsonapi_paginate,
+    jsonapi_cursor_pagination,
+    jsonapi_include,
+    jsonapi_links,
+    jsonapi_meta,
+    jsonapi_sort,
+    jsonapi_filter,
+    parse_include,
+)
 ```
 
-## `ApplicationBuilder`
+## `JsonApiNinja`
 
-Location: `django_ninja_jsonapi.api.application_builder.ApplicationBuilder`
+Location: `django_ninja_jsonapi.transparent.JsonApiNinja`
+
+A `NinjaAPI` subclass that automatically wraps responses in JSON:API document format and unwraps JSON:API request bodies into plain Pydantic schemas.
 
 ### Constructor
 
 ```python
-ApplicationBuilder(
-    api: NinjaAPI,
-    base_router: Router | None = None,
-    exception_handler: Callable | None = None,
-    **base_router_include_kwargs,
+JsonApiNinja(**kwargs)
+```
+
+Accepts all `NinjaAPI` keyword arguments. Automatically sets the renderer to `JSONAPIRenderer` and registers the JSON:API exception handler.
+
+### Behavior
+
+- Response schemas are automatically wrapped into JSON:API document format with `data`, `id`, `type`, `attributes`, and `relationships`.
+- Request body parameters are automatically unwrapped — your endpoint receives plain Pydantic model instances instead of nested JSON:API structures.
+- Resource type, relationships, and ID field are derived from `JsonApiMeta` on the schema, or inferred by convention.
+- Use `JsonApiRouter` for sub-routers that inherit the same behavior.
+
+## `JsonApiRouter`
+
+Location: `django_ninja_jsonapi.transparent.JsonApiRouter`
+
+A Django Ninja `Router` subclass with the same transparent wrapping/unwrapping behavior as `JsonApiNinja`. Use for modular route organization.
+
+```python
+from django_ninja_jsonapi.transparent import JsonApiRouter
+
+router = JsonApiRouter(tags=["articles"])
+
+@router.get("/articles", response=list[ArticleSchema])
+def list_articles(request):
+    return Article.objects.all()
+
+api.add_router("", router)
+```
+
+## `JsonApiMeta`
+
+Location: `django_ninja_jsonapi.meta.JsonApiMeta`
+
+Schema-level configuration for JSON:API behavior. Attach as a `ClassVar` on Pydantic schemas.
+
+### Constructor
+
+```python
+JsonApiMeta(
+    resource_type: str | None = None,
+    id_field: str = "id",
+    relationships: dict[str, dict] | None = None,
 )
 ```
 
-### `add_resource(...)`
+### Parameters
 
-Registers one JSON:API resource.
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `resource_type` | `str \| None` | `None` | JSON:API type name. Auto-derived from class name if omitted (e.g. `ArticleSchema` → `"articles"`). |
+| `id_field` | `str` | `"id"` | Field used as the resource ID. |
+| `relationships` | `dict` | `None` | Explicit relationship definitions. Auto-detected from type hints if omitted. |
 
-Parameters:
+### Example
 
-- `path: str`
-- `tags: Iterable[str]`
-- `resource_type: str`
-- `view: type`
-- `model: type`
-- `schema: type[BaseModel]`
-- `router: Router | None = None`
-- `schema_in_post: type[BaseModel] | None = None`
-- `schema_in_patch: type[BaseModel] | None = None`
-- `pagination_default_size: int | None = 20`
-- `pagination_default_number: int | None = 1`
-- `pagination_default_offset: int | None = None`
-- `pagination_default_limit: int | None = None`
-- `operations: Iterable[Operation] = ()`
-- `ending_slash: bool = True`
-- `model_id_field_name: str = "id"`
-- `include_router_kwargs: dict | None = None`
+```python
+from typing import ClassVar
+from pydantic import BaseModel
+from django_ninja_jsonapi import JsonApiMeta
 
-### `initialize()`
+class ArticleSchema(BaseModel):
+    id: int
+    title: str
+    author: AuthorSchema | None = None
 
-Builds and registers routes on the `NinjaAPI` instance.
+    jsonapi_meta: ClassVar[JsonApiMeta] = JsonApiMeta(
+        resource_type="articles",
+    )
+```
 
-Generated endpoints include:
+## `get_rel_id(request, name)`
 
-- resource list/detail CRUD endpoints
-- relationship list/detail GET endpoints (when relationship metadata is available)
-- atomic endpoint: `POST /operations`
+Location: `django_ninja_jsonapi.transparent.get_rel_id`
 
-### Response shape notes
+Extract a to-one relationship ID from the request body.
 
-- List/detail responses include top-level `links`.
-- Resource objects include `links.self`.
-- Relationship objects include `links.self` and `links.related`.
+```python
+author_id = get_rel_id(request, "author")  # str | None
+```
 
-### Django ORM optimizations
+## `get_rel_ids(request, name)`
 
-- Include paths are split automatically between `select_related` (to-one chains) and `prefetch_related` (to-many chains).
-- Filter parsing supports logical trees (`and`, `or`, `not`) in JSON `filter` payloads.
-- Cursor pagination is available via `page[cursor]` + `page[size]`.
+Location: `django_ninja_jsonapi.transparent.get_rel_ids`
 
-### Query parameter validation
+Extract to-many relationship IDs from the request body.
 
-- Allowed top-level query params: `filter`, `sort`, `include`, `fields[...]`, `page[...]`.
-- Unknown params return `400`.
-- Repeating non-filter params returns `400`.
+```python
+tag_ids = get_rel_ids(request, "tags")  # list[str]
+```
 
-## `Operation` enum
+## `apply_attributes(instance, body, ...)`
 
-Location: `django_ninja_jsonapi.views.enums.Operation`
+Location: `django_ninja_jsonapi.helpers.apply_attributes`
 
-Values:
+Apply attributes from a request body to a Django model instance.
 
-- `ALL`
-- `CREATE`
-- `DELETE`
-- `DELETE_LIST`
-- `GET`
-- `GET_LIST`
-- `UPDATE`
+### Parameters
 
-Use `Operation.ALL` to auto-expand to default concrete operations (`CREATE`, `DELETE`, `GET`, `GET_LIST`, `UPDATE`).
-`DELETE_LIST` is not included in that expansion and must be added explicitly.
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `instance` | Django Model | required | The model instance to update |
+| `body` | Pydantic model | required | The parsed request body (plain schema or legacy wrapper) |
+| `save` | `bool` | `True` | Call `instance.save()` with `update_fields` |
+| `extra_update_fields` | `Sequence[str]` | `()` | Additional fields for `update_fields` |
+| `exclude` | `set[str]` | `None` | Attribute names to skip |
+
+### Returns
+
+A `dict` of the attributes that were applied.
+
+## `JSONAPIRenderer`
+
+Location: `django_ninja_jsonapi.renderers.JSONAPIRenderer`
+
+Django Ninja renderer that produces `application/vnd.api+json` responses. Used automatically by `JsonApiNinja`.
+
+## `QueryStringManager`
+
+Location: `django_ninja_jsonapi.querystring.QueryStringManager`
+
+Parses JSON:API query parameters (`filter`, `sort`, `include`, `fields`, `page`) from the request.
+
+## Response helpers
+
+### `jsonapi_paginate(request, queryset, ...)`
+
+Paginate a queryset and attach JSON:API pagination links/meta to the request.
+
+### `jsonapi_cursor_pagination(request, queryset, ...)`
+
+Cursor-based pagination variant.
+
+### `jsonapi_include(request, included)`
+
+Attach included resources to the response.
+
+### `jsonapi_links(request, links)`
+
+Attach top-level links to the response.
+
+### `jsonapi_meta(request, meta)`
+
+Attach top-level meta to the response.
+
+### `jsonapi_sort(request, queryset)`
+
+Apply JSON:API `sort` parameter to a queryset.
+
+### `jsonapi_filter(request, queryset)`
+
+Apply JSON:API `filter` parameter to a queryset.
+
+### `parse_include(request)`
+
+Parse the `include` query parameter into a list of include paths.
+
+## Exceptions
+
+### `HTTPException`
+
+Base JSON:API exception with status code and detail.
+
+### `BadRequest`
+
+400 error.
+
+### `NotFound`
+
+404 error.
