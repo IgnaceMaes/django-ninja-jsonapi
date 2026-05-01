@@ -4,7 +4,6 @@ from django.test import RequestFactory
 
 from django_ninja_jsonapi.response_helpers import jsonapi_filter, jsonapi_sort, parse_include
 
-
 # ---------------------------------------------------------------------------
 # FakeQuerySet — lightweight stand-in for Django QuerySet
 # ---------------------------------------------------------------------------
