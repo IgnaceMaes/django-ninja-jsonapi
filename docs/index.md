@@ -23,6 +23,7 @@
 - [Getting started](getting-started.md)
 - [Installation](installation.md)
 - [Quickstart](quickstart.md)
+- [Transparent JSON:API](transparent_jsonapi.md)
 - [Standalone renderer](standalone_renderer.md)
 
 ### Usage

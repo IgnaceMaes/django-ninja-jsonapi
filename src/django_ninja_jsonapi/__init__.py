@@ -25,11 +25,15 @@ __all__ = [
     "JSONAPIRenderer",
     "JsonApiBody",
     "JsonApiDataIn",
+    "JsonApiMeta",
+    "JsonApiNinja",
     "JsonApiResource",
     "NotFound",
     "QueryStringManager",
     "ViewBaseGeneric",
     "apply_attributes",
+    "get_rel_id",
+    "get_rel_ids",
     "jsonapi_body",
     "jsonapi_cursor_pagination",
     "jsonapi_filter",
@@ -117,5 +121,25 @@ def __getattr__(name: str) -> Any:
         from django_ninja_jsonapi.model_schema import model_schema
 
         return model_schema
+
+    if name == "JsonApiMeta":
+        from django_ninja_jsonapi.meta import JsonApiMeta
+
+        return JsonApiMeta
+
+    if name == "JsonApiNinja":
+        from django_ninja_jsonapi.transparent import JsonApiNinja
+
+        return JsonApiNinja
+
+    if name == "get_rel_id":
+        from django_ninja_jsonapi.transparent import get_rel_id
+
+        return get_rel_id
+
+    if name == "get_rel_ids":
+        from django_ninja_jsonapi.transparent import get_rel_ids
+
+        return get_rel_ids
 
     raise AttributeError(name)
