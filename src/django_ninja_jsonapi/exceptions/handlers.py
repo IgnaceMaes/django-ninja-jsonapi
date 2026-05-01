@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpRequest, JsonResponse
 from pydantic import ValidationError
 
@@ -9,6 +10,24 @@ def base_exception_handler(request: HttpRequest, exc: HTTPException):
     return JsonResponse(
         status=exc.status_code,
         data={"errors": [exc.as_dict]},
+        content_type=JSONAPI_MEDIA_TYPE,
+    )
+
+
+def object_does_not_exist_handler(request: HttpRequest, exc: ObjectDoesNotExist):
+    detail = str(exc) if str(exc) else "Resource not found."
+    return JsonResponse(
+        status=404,
+        data={
+            "errors": [
+                {
+                    "status_code": 404,
+                    "title": "Not Found",
+                    "detail": detail,
+                    "source": {"pointer": ""},
+                }
+            ]
+        },
         content_type=JSONAPI_MEDIA_TYPE,
     )
 

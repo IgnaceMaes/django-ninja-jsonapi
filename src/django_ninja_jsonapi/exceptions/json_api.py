@@ -96,9 +96,15 @@ class BadRequest(HTTPException):
     status_code = HTTPStatus.BAD_REQUEST
 
 
-class NotFound(BadRequest):
+class NotFound(HTTPException):
     """
-    Error to warn that a relationship is not found on a model
+    Not Found HTTP exception for JSON:API 404 responses.
+
+    Raise directly from standalone endpoints::
+
+        from django_ninja_jsonapi.exceptions import NotFound
+
+        raise NotFound(detail="Article not found")
     """
 
     status_code = HTTPStatus.NOT_FOUND

@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any
 
-from django_ninja_jsonapi.exceptions import BadRequest
+from django_ninja_jsonapi.exceptions import BadRequest, NotFound
 from django_ninja_jsonapi.exceptions.json_api import HTTPException
 from django_ninja_jsonapi.querystring import QueryStringManager
 from django_ninja_jsonapi.renderers import JSONAPIRenderer
@@ -23,10 +23,12 @@ __all__ = [
     "BadRequest",
     "HTTPException",
     "JSONAPIRenderer",
+    "NotFound",
     "QueryStringManager",
     "ViewBaseGeneric",
     "jsonapi_body",
     "jsonapi_cursor_pagination",
+    "jsonapi_filter",
     "jsonapi_include",
     "jsonapi_links",
     "jsonapi_meta",
@@ -34,6 +36,8 @@ __all__ = [
     "jsonapi_pagination",
     "jsonapi_resource",
     "jsonapi_response",
+    "jsonapi_sort",
+    "parse_include",
     "setup_jsonapi",
 ]
 
@@ -68,5 +72,20 @@ def __getattr__(name: str) -> Any:
         from django_ninja_jsonapi.setup import setup_jsonapi
 
         return setup_jsonapi
+
+    if name == "jsonapi_sort":
+        from django_ninja_jsonapi.response_helpers import jsonapi_sort
+
+        return jsonapi_sort
+
+    if name == "jsonapi_filter":
+        from django_ninja_jsonapi.response_helpers import jsonapi_filter
+
+        return jsonapi_filter
+
+    if name == "parse_include":
+        from django_ninja_jsonapi.response_helpers import parse_include
+
+        return parse_include
 
     raise AttributeError(name)

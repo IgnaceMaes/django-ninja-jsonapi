@@ -6,10 +6,11 @@ from __future__ import annotations
 
 from typing import Callable, Optional
 
+from django.core.exceptions import ObjectDoesNotExist
 from ninja import NinjaAPI
 
 from django_ninja_jsonapi.exceptions import HTTPException
-from django_ninja_jsonapi.exceptions.handlers import base_exception_handler
+from django_ninja_jsonapi.exceptions.handlers import base_exception_handler, object_does_not_exist_handler
 from django_ninja_jsonapi.renderers import JSONAPIRenderer
 
 
@@ -31,12 +32,16 @@ def setup_jsonapi(
         api = NinjaAPI()
         setup_jsonapi(api)
 
-    It performs two actions:
+    It performs three actions:
 
     1. Sets ``api.renderer`` to a :class:`JSONAPIRenderer` (or a custom one).
     2. Registers :func:`base_exception_handler` (or a custom handler) for
        :class:`HTTPException` so that raised exceptions are returned as
        JSON:API error documents.
+    3. Registers :func:`object_does_not_exist_handler` for
+       :class:`~django.core.exceptions.ObjectDoesNotExist` so that Django's
+       ``Model.DoesNotExist`` and ``get_object_or_404`` produce JSON:API
+       error documents instead of plain JSON.
     """
     api.renderer = renderer or JSONAPIRenderer()
 
@@ -44,3 +49,4 @@ def setup_jsonapi(
     add_handler = getattr(api, "add_exception_handler", None)
     if callable(add_handler):
         add_handler(HTTPException, handler)
+        add_handler(ObjectDoesNotExist, object_does_not_exist_handler)
