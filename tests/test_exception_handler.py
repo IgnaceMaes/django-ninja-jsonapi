@@ -76,7 +76,7 @@ def test_object_does_not_exist_handler_returns_jsonapi_404():
     assert response.status_code == 404
     payload = json.loads(response.content.decode())
     assert "errors" in payload
-    assert payload["errors"][0]["status_code"] == 404
+    assert payload["errors"][0]["status"] == "404"
     assert payload["errors"][0]["title"] == "Not Found"
     assert "does not exist" in payload["errors"][0]["detail"]
     assert response["Content-Type"].startswith(JSONAPI_MEDIA_TYPE)

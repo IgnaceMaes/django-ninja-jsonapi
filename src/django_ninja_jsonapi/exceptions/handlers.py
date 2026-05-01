@@ -21,7 +21,7 @@ def object_does_not_exist_handler(request: HttpRequest, exc: ObjectDoesNotExist)
         data={
             "errors": [
                 {
-                    "status_code": 404,
+                    "status": "404",
                     "title": "Not Found",
                     "detail": detail,
                     "source": {"pointer": ""},

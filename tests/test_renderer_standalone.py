@@ -86,7 +86,8 @@ def test_renderer_relationships_with_included_meta_and_links_helpers():
     assert result["links"]["related"] == "http://testserver/articles/1/author/"
 
 
-def test_renderer_skips_rewrapping_for_jsonapi_documents():
+def test_renderer_enriches_prewrapped_jsonapi_documents():
+    """Pre-wrapped documents get enriched with self links and stripped of nulls."""
     request = RequestFactory().get("/articles/1/")
     setattr(request, REQUEST_JSONAPI_CONFIG_ATTR, JSONAPIResourceConfig(resource_type="articles"))
     payload = {
@@ -96,7 +97,14 @@ def test_renderer_skips_rewrapping_for_jsonapi_documents():
 
     result = _render_payload(request, payload)
 
-    assert result == payload
+    # Self links are added
+    assert result["links"]["self"] == "http://testserver/articles/1/"
+    assert result["data"]["links"]["self"] == "http://testserver/articles/1/"
+    # Original data is preserved
+    assert result["data"]["type"] == "articles"
+    assert result["data"]["id"] == "1"
+    assert result["data"]["attributes"]["title"] == "Hello"
+    assert result["jsonapi"]["version"] == "1.0"
 
 
 # ---------------------------------------------------------------------------

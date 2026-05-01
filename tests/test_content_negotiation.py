@@ -33,11 +33,15 @@ class TestValidateContentType:
             validate_content_type(request)
         assert exc_info.value.status_code == 415
 
-    def test_jsonapi_with_profile_param_raises_415(self):
+    def test_jsonapi_with_profile_param_passes(self):
+        """§6.3 — ext and profile params are allowed on Content-Type."""
         request = factory.post("/", content_type="application/vnd.api+json; profile=custom")
-        with pytest.raises(UnsupportedMediaType) as exc_info:
-            validate_content_type(request)
-        assert exc_info.value.status_code == 415
+        validate_content_type(request)  # should not raise
+
+    def test_jsonapi_with_ext_param_passes(self):
+        """§6.3 — ext param is allowed on Content-Type."""
+        request = factory.post("/", content_type='application/vnd.api+json; ext="https://jsonapi.org/ext/atomic"')
+        validate_content_type(request)  # should not raise
 
 
 class TestValidateAccept:
@@ -73,10 +77,18 @@ class TestValidateAccept:
         )
         validate_accept(request)
 
-    def test_accept_all_jsonapi_entries_with_params_raises_406(self):
+    def test_accept_all_jsonapi_entries_with_ext_or_profile_passes(self):
+        """§6.3 — ext and profile params in Accept MUST be ignored (not counted as extra)."""
         request = factory.get(
             "/",
             HTTP_ACCEPT="application/vnd.api+json; ext=bulk, application/vnd.api+json; profile=x",
+        )
+        validate_accept(request)  # should not raise
+
+    def test_accept_all_jsonapi_entries_with_non_ext_profile_params_raises_406(self):
+        request = factory.get(
+            "/",
+            HTTP_ACCEPT="application/vnd.api+json; charset=utf-8, application/vnd.api+json; version=1",
         )
         with pytest.raises(NotAcceptable) as exc_info:
             validate_accept(request)
