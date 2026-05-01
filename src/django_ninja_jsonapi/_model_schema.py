@@ -149,10 +149,7 @@ def _resolve_model_fields(
             prop_type: Any = hints.get(field_name, Any)
 
             if not hasattr(model, field_name) and field_name not in hints:
-                msg = (
-                    f"field {field_name!r} not found as a database field, "
-                    f"property, or annotation on {model.__name__}"
-                )
+                msg = f"field {field_name!r} not found as a database field, property, or annotation on {model.__name__}"
                 raise ValueError(msg)
 
             annotations[field_name] = Optional[prop_type]
@@ -166,7 +163,7 @@ def _attach_jsonapi_meta(schema: type, resource_type: str | None, id_field: str 
     if resource_type is not None:
         from django_ninja_jsonapi.meta import JsonApiMeta
 
-        schema.jsonapi_meta = JsonApiMeta(resource_type=resource_type, id_field=id_field)
+        schema.jsonapi_meta = JsonApiMeta(resource_type=resource_type, id_field=id_field)  # ty: ignore[unresolved-attribute]
 
 
 # ---------------------------------------------------------------------------
@@ -191,7 +188,11 @@ class _ModelSchemaMeta(_PydanticMetaclass):
             optional_fields = getattr(meta, "optional_fields", None)
 
             _, annotations, defaults = _resolve_model_fields(
-                model, fields, exclude, all_optional, optional_fields,
+                model,
+                fields,
+                exclude,
+                all_optional,
+                optional_fields,
             )
 
             # Inject annotations — user-declared fields take precedence
