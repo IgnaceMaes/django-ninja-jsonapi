@@ -220,7 +220,7 @@ class QueryStringManager:
         # check values type
         pagination_data: dict[str, str] = self._get_unique_key_values("page")
         try:
-            pagination = PaginationQueryStringManager(**pagination_data)  # ty: ignore[invalid-argument-type]
+            pagination = PaginationQueryStringManager.model_validate(pagination_data)
         except ValidationError as ex:
             raise BadRequest(detail="Invalid pagination query parameter", parameter="page") from ex
 

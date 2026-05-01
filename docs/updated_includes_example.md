@@ -10,7 +10,7 @@ This example combines relationship updates with `include` to return expanded pay
 
 ```http
 PATCH /customers/1?include=computers
-Content-Type: application/json
+Content-Type: application/vnd.api+json
 
 {
 	"data": {

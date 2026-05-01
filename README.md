@@ -147,40 +147,17 @@ Relationships, includes, sparse fieldsets, filtering, sorting and pagination all
 
 ## Architecture
 
-The library provides two APIs. Both produce spec-compliant JSON:API responses through `JSONAPIRenderer`.
-
-### ApplicationBuilder — request flow
-
-`ApplicationBuilder` auto-generates CRUD routes from a model + schema pair. Incoming requests flow through the full pipeline:
+`NinjaJsonAPI` is a `NinjaAPI` subclass that transparently wraps responses in JSON:API documents and unwraps JSON:API request bodies into plain Pydantic schemas.
 
 ```mermaid
 flowchart LR
-    Client -->|HTTP request| NinjaAPI
-    NinjaAPI --> ContentNegotiation
-    ContentNegotiation --> ViewBase["ViewBase\n(generated endpoint)"]
-    ViewBase --> QSM["QueryStringManager\n(parse filter / sort /\ninclude / fields / page)"]
-    QSM --> DataLayer["DjangoORMDataLayer\n(apply filters, sorts,\nselect_related,\nprefetch_related)"]
-    DataLayer --> DB[(Django ORM)]
-    DB --> DataLayer
-    DataLayer --> ViewBase
-    ViewBase -->|"build response\n(relationships, links, meta)"| JSONAPIRenderer
+    Client -->|HTTP request| NinjaJsonAPI
+    NinjaJsonAPI --> ContentNegotiation["Content Negotiation\n(415 / 406)"]
+    ContentNegotiation --> Unwrap["Unwrap JSON:API body\n→ plain Pydantic schema"]
+    Unwrap --> Endpoint["Your endpoint\n(plain Django Ninja view)"]
+    Endpoint -->|"dict / Pydantic / QuerySet"| JSONAPIRenderer
     JSONAPIRenderer -->|"application/vnd.api+json"| Client
 ```
-
-### Standalone renderer — request flow
-
-With `setup_jsonapi(api)` you write plain Django Ninja endpoints; the `@jsonapi_resource` decorator attaches config to the request and `JSONAPIRenderer` wraps the return value into a JSON:API document.
-
-```mermaid
-flowchart LR
-    Client -->|HTTP request| NinjaAPI
-    NinjaAPI --> Decorator["@jsonapi_resource\n(attach resource config\nto request)"]
-    Decorator --> Endpoint["User endpoint\n(custom query logic)"]
-    Endpoint -->|"dict / Pydantic / Model"| JSONAPIRenderer
-    JSONAPIRenderer -->|"application/vnd.api+json"| Client
-```
-
-For full standalone usage (pagination, relationships, OpenAPI schemas, request body parsing, CRUD example), see the [standalone renderer docs](https://ignacemaes.com/django-ninja-jsonapi/standalone_renderer/).
 
 ## Configuration
 
@@ -197,25 +174,28 @@ NINJA_JSONAPI = {
 }
 ```
 
-Additional view/schema options:
-
-- `django_filterset_class` on a `ViewBaseGeneric` subclass to enable optional django-filter integration.
-- `JSONAPIMeta.meta_fields` (or `Meta.meta_fields`) on schema classes to expose selected fields in resource `meta`.
-
 ## Exported public API
 
 ```python
 from django_ninja_jsonapi import (
-    ApplicationBuilder,
+    NinjaJsonAPI,
+    JsonApiMeta,
+    JSONAPIRenderer,
     QueryStringManager,
     HTTPException,
     BadRequest,
-    ViewBaseGeneric,
-    JSONAPIRenderer,
-    jsonapi_resource,
+    NotFound,
+    apply_attributes,
+    get_rel_id,
+    get_rel_ids,
+    model_schema,
+    jsonapi_paginate,
     jsonapi_include,
     jsonapi_meta,
     jsonapi_links,
+    jsonapi_sort,
+    jsonapi_filter,
+    parse_include,
 )
 ```
 

@@ -131,13 +131,11 @@ def jsonapi_paginate(
     try:
         from django.db.models import QuerySet
 
-        is_queryset = isinstance(items, QuerySet)
+        if isinstance(items, QuerySet):
+            count = items.count()
+        else:
+            count = len(items)
     except ImportError:  # pragma: no cover
-        is_queryset = False
-
-    if is_queryset:
-        count = items.count()  # ty: ignore[missing-argument] # QuerySet.count() — avoids loading all rows
-    else:
         count = len(items)
 
     # ---- slice ----

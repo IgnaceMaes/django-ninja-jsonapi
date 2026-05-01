@@ -2,7 +2,7 @@
   "method": "POST",
   "path": "/api/customers",
   "headers": {
-    "Content-Type": "application/json"
+    "Content-Type": "application/vnd.api+json"
   },
   "body": {
     "data": {

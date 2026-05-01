@@ -2,7 +2,7 @@
   "method": "PATCH",
   "path": "/api/customers/1",
   "headers": {
-    "Content-Type": "application/json"
+    "Content-Type": "application/vnd.api+json"
   },
   "body": {
     "data": {

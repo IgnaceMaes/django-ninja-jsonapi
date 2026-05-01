@@ -167,7 +167,7 @@ def model_schema(
             is_optional = all_optional or (optional_fields and field_name in optional_fields) or nullable or has_def
 
             if is_optional:
-                pydantic_fields[field_name] = (Optional[python_type], None)  # ty: ignore[invalid-type-form]
+                pydantic_fields[field_name] = (Optional[python_type], None)
             else:
                 pydantic_fields[field_name] = (python_type, ...)
         else:
@@ -193,7 +193,7 @@ def model_schema(
     if extra_fields:
         pydantic_fields.update(extra_fields)
 
-    schema = create_model(  # ty: ignore[no-matching-overload]
+    schema = create_model(
         model_name,
         __config__=ConfigDict(from_attributes=True),
         **pydantic_fields,
