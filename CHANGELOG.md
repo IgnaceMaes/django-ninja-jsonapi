@@ -2,6 +2,27 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.9.0](https://github.com/IgnaceMaes/django-ninja-jsonapi/compare/v0.8.0...v0.9.0) (2026-05-01)
+
+
+### Features
+
+* class-based model schema ([37ca4ef](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/37ca4ef4408f6babf62c4f330783ba03aba8d82a))
+* class-based model schema ([9329df2](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/9329df2a7561bbf31c888ead6a2ed6053f99eb4e))
+
+
+### Bug Fixes
+
+* demo app ([3b979b1](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/3b979b1ada9998902cf261a3a3c109f4ab2dddda))
+* demo app ([2f757bb](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/2f757bb89a4cd68682342bc6c35eb88d7f187a44))
+* lint ([85d96b5](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/85d96b549d1c1c22c790ecb678ee2ea7efdf58d5))
+
+
+### Documentation
+
+* update to new api ([713a75e](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/713a75e05cd2650b93003ef8bfa555308edd8114))
+* update to new api ([989df12](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/989df1252173a492a60bbf0b928b08b843891390))
+
 ## [0.8.0](https://github.com/IgnaceMaes/django-ninja-jsonapi/compare/v0.7.0...v0.8.0) (2026-05-01)
 
 
