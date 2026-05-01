@@ -6,6 +6,7 @@
 from django_ninja_jsonapi import (
     NinjaJsonAPI,
     JsonApiMeta,
+    ModelSchema,
     JSONAPIRenderer,
     QueryStringManager,
     HTTPException,
@@ -14,7 +15,6 @@ from django_ninja_jsonapi import (
     apply_attributes,
     get_rel_id,
     get_rel_ids,
-    model_schema,
     jsonapi_paginate,
     jsonapi_pagination,
     jsonapi_cursor_pagination,
@@ -144,6 +144,24 @@ Apply attributes from a request body to a Django model instance.
 ### Returns
 
 A `dict` of the attributes that were applied.
+
+## `ModelSchema`
+
+Location: `django_ninja_jsonapi._model_schema.ModelSchema`
+
+Declarative base class for generating schemas from Django models. Define a `Meta` inner class instead of listing fields manually.
+
+```python
+from django_ninja_jsonapi import ModelSchema
+
+class CustomerSchema(ModelSchema):
+    class Meta:
+        model = Customer
+        fields = ["id", "name", "email"]
+        resource_type = "customers"
+```
+
+See [Model schema](model_schema.md) for `Meta` options and full documentation.
 
 ## `JSONAPIRenderer`
 
