@@ -40,8 +40,10 @@ class SchemaBuilder:
     def __init__(
         self,
         resource_type: str,
+        model_id_field_name: str = "id",
     ):
         self._resource_type = resource_type
+        self._model_id_field_name = model_id_field_name
 
     def _create_schemas_objects_list(self, schema: Type[BaseModel]) -> Type[JSONAPIResultListSchema]:
         _object_jsonapi_list_schema, list_jsonapi_schema = self.build_list_schemas(schema)

@@ -160,3 +160,29 @@ def test_builder_initializes_resources_with_included_relationship_schemas():
 
     initialized = builder.initialize()
     assert initialized is api
+
+
+def test_create_endpoint_registers_with_201_status():
+    """Fix #1: POST endpoints should have 201 Created response schema."""
+    api = NinjaAPI()
+    builder = ApplicationBuilder(api)
+
+    builder.add_resource(
+        path="/dummy",
+        tags=["dummy"],
+        resource_type="dummy",
+        view=DummyView,
+        model=DummyModel,
+        schema=DummySchema,
+        operations=[Operation.CREATE],
+    )
+
+    builder.initialize()
+
+    # Find the POST route and verify it has 201 in its response
+    for _, router in api._routers:
+        for path_key, path_ops in router.path_operations.items():
+            if path_key == "/dummy/":
+                for path_op in path_ops.operations:
+                    if "POST" in path_op.methods:
+                        assert 201 in path_op.response_models

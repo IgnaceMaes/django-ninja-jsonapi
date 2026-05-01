@@ -63,12 +63,14 @@ class BaseDataLayer:
         cls,
         data_create: BaseJSONAPIItemInSchema,
         model_kwargs: dict,
+        model_id_field_name: str = "id",
     ):
         """
         Set custom id (if allowed)
 
         :param data_create: the data validated by pydantic.
         :param model_kwargs: the data validated by pydantic.
+        :param model_id_field_name: the model field name for the id (e.g. "id", "uuid").
         """
         if data_create.id is None:
             return model_kwargs
@@ -78,7 +80,7 @@ class BaseDataLayer:
             id_value = data_create.id
             if can_set_id.cast_type:
                 id_value = TypeAdapter(can_set_id.cast_type).validate_python(id_value)
-            model_kwargs["id"] = id_value
+            model_kwargs[model_id_field_name] = id_value
 
         return model_kwargs
 

@@ -717,6 +717,60 @@ class ViewBase:
 
         return include_fields
 
+    def _add_relationship_linkage(
+        self,
+        db_item: TypeModel,
+        item_data: dict,
+        resource_type: str,
+    ) -> None:
+        """Add relationship linkage (resource identifier objects + links) for all relationships."""
+        if not schemas_storage.has_operation(resource_type, "get"):
+            return
+
+        relationships_info = schemas_storage.get_relationships_info(
+            resource_type=resource_type,
+            operation_type="get",
+        )
+        if not relationships_info:
+            return
+
+        relationships = item_data.setdefault("relationships", {})
+        object_id = str(models_storage.get_object_id(db_item, resource_type))
+
+        for relationship_name, info in relationships_info.items():
+            if relationship_name in relationships:
+                continue
+
+            relation_attr_name = info.model_field_name or relationship_name
+            links = self._build_relationship_links(resource_type, object_id, relationship_name)
+
+            if info.many:
+                relationship_value = getattr(db_item, relation_attr_name, None)
+                if relationship_value is not None and hasattr(relationship_value, "all"):
+                    # Check if the to-many relation is already prefetched to avoid N+1
+                    prefetch_cache = getattr(db_item, "_prefetched_objects_cache", {})
+                    if relation_attr_name in prefetch_cache:
+                        related_items = prefetch_cache[relation_attr_name]
+                        data = [
+                            {"id": str(getattr(item, info.id_field_name)), "type": info.resource_type}
+                            for item in related_items
+                        ]
+                        relationships[relationship_name] = {"data": data, "links": links}
+                    else:
+                        relationships[relationship_name] = {"links": links}
+                else:
+                    relationships[relationship_name] = {"links": links}
+            else:
+                # To-one: read the FK value directly to avoid a lazy-load query
+                fk_value = getattr(db_item, f"{relation_attr_name}_id", None)
+                if fk_value is not None:
+                    relationships[relationship_name] = {
+                        "data": {"id": str(fk_value), "type": info.resource_type},
+                        "links": links,
+                    }
+                else:
+                    relationships[relationship_name] = {"data": None, "links": links}
+
     def _build_detail_response(self, db_item: TypeModel) -> dict:
         include_fields = self._get_include_fields()
         item_data = self._prepare_item_data(db_item, self.resource_type, include_fields)
@@ -726,6 +780,7 @@ class ViewBase:
                 resource_id=str(models_storage.get_object_id(db_item, self.resource_type)),
             )
         )
+        self._add_relationship_linkage(db_item, item_data, self.resource_type)
         response = {
             "data": item_data,
             "meta": None,
@@ -761,6 +816,7 @@ class ViewBase:
                     resource_id=str(models_storage.get_object_id(db_item, self.resource_type)),
                 )
             )
+            self._add_relationship_linkage(db_item, item_data, self.resource_type)
         response = {
             "data": items_data,
             "meta": {"count": count, "totalPages": total_pages},

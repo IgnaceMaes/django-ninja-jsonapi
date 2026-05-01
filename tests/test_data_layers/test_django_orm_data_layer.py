@@ -6,6 +6,7 @@ from django.test import RequestFactory
 
 from django_ninja_jsonapi.data_layers.django_orm.orm import DjangoORMDataLayer
 from django_ninja_jsonapi.exceptions import BadRequest
+from django_ninja_jsonapi.storages.models_storage import models_storage
 
 
 class _AttributesRecorder:
@@ -20,6 +21,7 @@ class _AttributesRecorder:
 @pytest.mark.asyncio
 async def test_create_object_uses_exclude_unset(monkeypatch):
     request = RequestFactory().post("/api/customers")
+    models_storage.add_model("customer", SimpleNamespace, "id", "/customers")
     data_layer = DjangoORMDataLayer(
         request=request,
         model=SimpleNamespace,
@@ -220,3 +222,46 @@ def test_apply_querystring_raises_bad_request_on_invalid_filter_or_sort(monkeypa
         data_layer._apply_querystring(FakeQuerySet(), qs)
 
     assert exc_info.value.as_dict["detail"] == "Invalid filter or sort query parameters"
+
+
+@pytest.mark.asyncio
+async def test_get_base_queryset_default(monkeypatch):
+    """By default, get_base_queryset returns model.objects.all()."""
+    sentinel = SimpleNamespace(name="default_queryset")
+
+    monkeypatch.setattr(
+        "django_ninja_jsonapi.data_layers.django_orm.orm.BaseDjangoORM.queryset",
+        lambda model: sentinel,
+    )
+
+    request = RequestFactory().get("/api/customers")
+    data_layer = DjangoORMDataLayer(
+        request=request,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+        resource_type="customer",
+    )
+
+    result = await data_layer.get_base_queryset()
+    assert result is sentinel
+
+
+@pytest.mark.asyncio
+async def test_get_base_queryset_can_be_overridden():
+    """Subclasses can override get_base_queryset for tenant scoping."""
+    custom_qs = SimpleNamespace(name="custom_filtered_queryset")
+
+    class ScopedDataLayer(DjangoORMDataLayer):
+        async def get_base_queryset(self):
+            return custom_qs
+
+    request = RequestFactory().get("/api/customers")
+    data_layer = ScopedDataLayer(
+        request=request,
+        model=SimpleNamespace,
+        schema=SimpleNamespace,
+        resource_type="customer",
+    )
+
+    result = await data_layer.get_base_queryset()
+    assert result is custom_qs

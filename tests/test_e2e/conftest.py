@@ -64,6 +64,10 @@ ComputerSchema.model_rebuild()
 
 class ComputerCreateSchema(BaseModel):
     serial: str
+    owner: Annotated[
+        Optional["CustomerSchema"],
+        RelationshipInfo(resource_type="customer", many=False),
+    ] = None
 
 
 class CustomerCreateSchema(BaseModel):

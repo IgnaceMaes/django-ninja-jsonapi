@@ -51,12 +51,16 @@ class DjangoORMDataLayer(BaseDataLayer):
         await self.before_create_object(data_create, view_kwargs)
 
         model_kwargs = data_create.attributes.model_dump(exclude_unset=True)  # ty: ignore[unresolved-attribute]
-        model_kwargs = self._apply_client_generated_id(data_create, model_kwargs)
+        id_field_name = models_storage.get_model_id_field_name(self.resource_type)
+        model_kwargs = self._apply_client_generated_id(data_create, model_kwargs, model_id_field_name=id_field_name)
+
+        # Resolve to-one (FK) relationships before creation so the FK is set on the model.
+        model_kwargs = await self._resolve_fk_relationships(data_create, model_kwargs)
 
         db_object = await sync_to_async(BaseDjangoORM.create, thread_sensitive=True)(self.model, **model_kwargs)  # ty: ignore[invalid-argument-type]
         atomic_ctx = await self._start_nested_atomic()
         try:
-            await self._apply_relationships(db_object, data_create)
+            await self._apply_relationships(db_object, data_create, skip_to_one=True)
         except Exception as ex:
             await self._end_nested_atomic(atomic_ctx, exception=ex)
             raise
@@ -64,6 +68,15 @@ class DjangoORMDataLayer(BaseDataLayer):
 
         await self.after_create_object(db_object, data_create, view_kwargs)
         return db_object
+
+    async def get_base_queryset(self):
+        """Return the base queryset for this resource.
+
+        Override this method to apply tenant scoping, permission filters, or any
+        other restrictions that should be applied to both ``get_object`` and
+        ``get_collection``.
+        """
+        return BaseDjangoORM.queryset(self.model)  # ty: ignore[invalid-argument-type]
 
     async def get_object(
         self,
@@ -73,7 +86,7 @@ class DjangoORMDataLayer(BaseDataLayer):
     ):
         await self.before_get_object(view_kwargs)
 
-        queryset = BaseDjangoORM.queryset(self.model)  # ty: ignore[invalid-argument-type]
+        queryset = await self.get_base_queryset()
         if qs is not None:
             queryset = self._apply_querystring(queryset, qs)
 
@@ -121,7 +134,7 @@ class DjangoORMDataLayer(BaseDataLayer):
     ):
         await self.before_get_collection(qs, view_kwargs)
 
-        queryset = BaseDjangoORM.queryset(self.model)  # ty: ignore[invalid-argument-type]
+        queryset = await self.get_base_queryset()
         if view_kwargs:
             queryset = queryset.filter(**view_kwargs)
 
@@ -436,7 +449,42 @@ class DjangoORMDataLayer(BaseDataLayer):
 
         return True
 
-    async def _apply_relationships(self, db_object, data_payload: BaseJSONAPIItemInSchema):
+    async def _resolve_fk_relationships(
+        self,
+        data_payload: BaseJSONAPIItemInSchema,
+        model_kwargs: dict,
+    ) -> dict:
+        """Resolve to-one (FK) relationships and add them to model_kwargs before creation."""
+        if data_payload.relationships is None:
+            return model_kwargs
+
+        relationships_data = data_payload.relationships.model_dump(exclude_none=True)  # ty: ignore[unresolved-attribute]
+        for relation_name, rel_payload in relationships_data.items():
+            if "data" not in rel_payload:
+                continue
+
+            field = self.schema.model_fields.get(relation_name)
+            if field is None:
+                continue
+
+            rel_info = get_relationship_info_from_field_metadata(field)
+            if rel_info is None or rel_info.many:
+                continue
+
+            ids_payload = rel_payload["data"]
+            if not ids_payload:
+                continue
+
+            relation_attr_name = rel_info.model_field_name or relation_name
+            related_model = models_storage.search_relationship_model(self.resource_type, self.model, relation_attr_name)
+            related_objects = await self.get_related_objects(related_model, rel_info.id_field_name, [ids_payload["id"]])
+
+            if related_objects:
+                model_kwargs[relation_attr_name] = related_objects[0]
+
+        return model_kwargs
+
+    async def _apply_relationships(self, db_object, data_payload: BaseJSONAPIItemInSchema, skip_to_one: bool = False):
         if data_payload.relationships is None:
             return
 
@@ -451,6 +499,9 @@ class DjangoORMDataLayer(BaseDataLayer):
 
             rel_info = get_relationship_info_from_field_metadata(field)
             if rel_info is None:
+                continue
+
+            if skip_to_one and not rel_info.many:
                 continue
 
             ids_payload = rel_payload["data"]

@@ -96,7 +96,7 @@ class TestCreateEndpoint:
             data=json.dumps(payload),
             content_type=JSONAPI_CT,
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 201
         body = json.loads(resp.content)
         assert body["data"]["type"] == "customer"
         assert body["data"]["attributes"]["name"] == "Charlie"
@@ -270,3 +270,103 @@ class TestContentNegotiation:
             content_type="application/json",
         )
         assert resp.status_code == 415
+
+
+# ---------------------------------------------------------------------------
+# Relationship linkage in responses (Fix #3)
+# ---------------------------------------------------------------------------
+
+
+class TestRelationshipLinkage:
+    async def test_detail_includes_to_one_linkage(self):
+        """GET detail for a resource with a to-one FK should include relationship linkage."""
+        cust = await _create_customer()
+        comp = await _create_computer("SN-001", owner=cust)
+
+        client = AsyncClient()
+        resp = await client.get(f"/api/computers/{comp.pk}/")
+        assert resp.status_code == 200
+        body = json.loads(resp.content)
+        rels = body["data"].get("relationships", {})
+        assert "owner" in rels
+        assert rels["owner"]["data"]["type"] == "customer"
+        assert rels["owner"]["data"]["id"] == str(cust.pk)
+        assert "links" in rels["owner"]
+        assert "self" in rels["owner"]["links"]
+        assert "related" in rels["owner"]["links"]
+
+    async def test_detail_includes_null_to_one_linkage(self):
+        """GET detail for a resource with a null FK should include data: null."""
+        comp = await _create_computer("SN-001", owner=None)
+
+        client = AsyncClient()
+        resp = await client.get(f"/api/computers/{comp.pk}/")
+        assert resp.status_code == 200
+        body = json.loads(resp.content)
+        rels = body["data"].get("relationships", {})
+        assert "owner" in rels
+        assert rels["owner"]["data"] is None
+
+    async def test_list_includes_to_one_linkage(self):
+        """GET list should include relationship linkage for each item."""
+        cust = await _create_customer()
+        await _create_computer("SN-001", owner=cust)
+
+        client = AsyncClient()
+        resp = await client.get("/api/computers/")
+        assert resp.status_code == 200
+        body = json.loads(resp.content)
+        item = body["data"][0]
+        rels = item.get("relationships", {})
+        assert "owner" in rels
+        assert rels["owner"]["data"]["id"] == str(cust.pk)
+
+    async def test_detail_includes_to_many_linkage_links(self):
+        """GET detail for a resource with a to-many relationship should include links."""
+        cust = await _create_customer()
+
+        client = AsyncClient()
+        resp = await client.get(f"/api/customers/{cust.pk}/")
+        assert resp.status_code == 200
+        body = json.loads(resp.content)
+        rels = body["data"].get("relationships", {})
+        assert "computers" in rels
+        assert "links" in rels["computers"]
+        assert "self" in rels["computers"]["links"]
+        assert "related" in rels["computers"]["links"]
+
+
+# ---------------------------------------------------------------------------
+# FK resolution on create (Fix #4)
+# ---------------------------------------------------------------------------
+
+
+class TestFKResolutionOnCreate:
+    async def test_create_with_to_one_relationship(self):
+        """POST with a to-one relationship in the relationships block should set the FK."""
+        cust = await _create_customer()
+        payload = {
+            "data": {
+                "type": "computer",
+                "attributes": {"serial": "SN-FK-001"},
+                "relationships": {
+                    "owner": {
+                        "data": {"type": "customer", "id": str(cust.pk)},
+                    }
+                },
+            }
+        }
+        client = AsyncClient()
+        resp = await client.post(
+            "/api/computers/",
+            data=json.dumps(payload),
+            content_type=JSONAPI_CT,
+        )
+        assert resp.status_code == 201
+        body = json.loads(resp.content)
+        assert body["data"]["type"] == "computer"
+        assert body["data"]["attributes"]["serial"] == "SN-FK-001"
+
+        # Verify the FK was actually set on the created object
+        comp = await sync_to_async(Computer.objects.get)(serial="SN-FK-001")
+        assert comp.owner_id == cust.pk

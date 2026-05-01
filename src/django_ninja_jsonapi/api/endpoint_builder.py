@@ -145,7 +145,8 @@ class EndpointsBuilder:
             self._validate_request(request, has_body=True)
             view = self._build_view(request, Operation.CREATE)
             payload = self.data.schema_in_post_envelope.model_validate(self._parse_json_body(request))
-            return await view.handle_post_resource_list(data_create=payload.data)  # ty: ignore[unresolved-attribute]
+            result = await view.handle_post_resource_list(data_create=payload.data)  # ty: ignore[unresolved-attribute]
+            return 201, result
 
         return f"{self.resource_type}_create", endpoint
 
