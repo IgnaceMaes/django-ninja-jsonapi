@@ -23,9 +23,13 @@ __all__ = [
     "BadRequest",
     "HTTPException",
     "JSONAPIRenderer",
+    "JsonApiBody",
+    "JsonApiDataIn",
+    "JsonApiResource",
     "NotFound",
     "QueryStringManager",
     "ViewBaseGeneric",
+    "apply_attributes",
     "jsonapi_body",
     "jsonapi_cursor_pagination",
     "jsonapi_filter",
@@ -37,6 +41,7 @@ __all__ = [
     "jsonapi_resource",
     "jsonapi_response",
     "jsonapi_sort",
+    "model_schema",
     "parse_include",
     "setup_jsonapi",
 ]
@@ -68,6 +73,16 @@ def __getattr__(name: str) -> Any:
 
         return jsonapi_body
 
+    if name == "JsonApiBody":
+        from django_ninja_jsonapi.schema_factory import JsonApiBody
+
+        return JsonApiBody
+
+    if name == "JsonApiDataIn":
+        from django_ninja_jsonapi.schema_factory import JsonApiDataIn
+
+        return JsonApiDataIn
+
     if name == "setup_jsonapi":
         from django_ninja_jsonapi.setup import setup_jsonapi
 
@@ -87,5 +102,20 @@ def __getattr__(name: str) -> Any:
         from django_ninja_jsonapi.response_helpers import parse_include
 
         return parse_include
+
+    if name == "apply_attributes":
+        from django_ninja_jsonapi.helpers import apply_attributes
+
+        return apply_attributes
+
+    if name == "JsonApiResource":
+        from django_ninja_jsonapi.resource import JsonApiResource
+
+        return JsonApiResource
+
+    if name == "model_schema":
+        from django_ninja_jsonapi.model_schema import model_schema
+
+        return model_schema
 
     raise AttributeError(name)

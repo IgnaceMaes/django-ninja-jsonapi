@@ -359,6 +359,7 @@ def jsonapi_filter(
     queryset: Any,
     *,
     allowed_fields: set[str] | None = None,
+    field_map: dict[str, str] | None = None,
 ) -> Any:
     """Apply JSON:API ``?filter[field]=value`` filters to a Django ``QuerySet``.
 
@@ -370,6 +371,11 @@ def jsonapi_filter(
         queryset: A Django ``QuerySet`` to filter.
         allowed_fields: Optional allow-list of field names.  If provided,
             fields not in the set are silently ignored.
+        field_map: Optional mapping of JSON:API filter names to ORM field
+            expressions.  For example,
+            ``{"appointment_date": "appointment_dt__date"}`` lets clients
+            filter with ``?filter[appointment_date]=2024-01-01`` while the
+            query targets the correct ORM expression.
 
     Returns:
         The filtered ``QuerySet``.
@@ -380,7 +386,11 @@ def jsonapi_filter(
         @jsonapi_resource("articles")
         def list_articles(request):
             qs = Article.objects.all()
-            qs = jsonapi_filter(request, qs, allowed_fields={"status", "author"})
+            qs = jsonapi_filter(
+                request, qs,
+                allowed_fields={"status", "author", "appointment_date"},
+                field_map={"appointment_date": "appointment_dt__date"},
+            )
             return jsonapi_paginate(request, qs)
     """
     from urllib.parse import unquote
@@ -399,7 +409,10 @@ def jsonapi_filter(
             continue
 
         value = request.GET[raw_key]
-        orm_field = field_name.replace(".", "__")
+        if field_map and field_name in field_map:
+            orm_field = field_map[field_name]
+        else:
+            orm_field = field_name.replace(".", "__")
         q &= Q(**{orm_field: value})
 
     if q:

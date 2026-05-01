@@ -32,3 +32,10 @@ This section groups day-to-day JSON:API features and behaviors.
 - [Errors](errors.md)
 - [Permission](permission.md)
 - [OAuth](oauth.md)
+
+## Helpers and utilities
+
+- [Resource descriptor](resource_descriptor.md)
+- [Body helpers](body_helpers.md)
+- [Schema-aware model coercion](schema_coercion.md)
+- [Model schema factory](model_schema.md)

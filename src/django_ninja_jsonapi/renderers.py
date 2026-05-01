@@ -30,6 +30,7 @@ class JSONAPIResourceConfig:
     include_jsonapi_object: bool = True
     jsonapi_version: str = "1.0"
     relationships: dict[str, JSONAPIRelationshipConfig] = field(default_factory=dict)
+    schema: Any = None  # Optional Pydantic schema for property-aware coercion
 
 
 @dataclass(frozen=True)
@@ -155,7 +156,7 @@ class JSONAPIRenderer(JSONRenderer):
         if item is None:
             return None
 
-        item = self._coerce_to_dict(item)
+        item = self._coerce_to_dict(item, schema=resource_config.schema)
 
         item_id_value = item.get(resource_config.id_field)
         if item_id_value is None:
@@ -291,7 +292,7 @@ class JSONAPIRenderer(JSONRenderer):
         return request.build_absolute_uri(item_path)
 
     @staticmethod
-    def _coerce_to_dict(item: Any) -> dict[str, Any]:
+    def _coerce_to_dict(item: Any, *, schema: Any = None) -> dict[str, Any]:
         if isinstance(item, dict):
             return item
 
@@ -307,6 +308,11 @@ class JSONAPIRenderer(JSONRenderer):
             from django.db import models as django_models
 
             if isinstance(item, django_models.Model):
+                # If a Pydantic schema is provided, use it to extract data
+                # including @property fields via from_attributes=True.
+                if schema is not None:
+                    return schema.model_validate(item, from_attributes=True).model_dump()
+
                 data: dict[str, Any] = {}
                 for field in item._meta.get_fields():
                     if not hasattr(field, "attname"):
