@@ -8,7 +8,7 @@ from django_ninja_jsonapi.api.schemas import ResourceData
 from django_ninja_jsonapi.atomic.atomic import AtomicOperations
 from django_ninja_jsonapi.data_typing import TypeModel
 from django_ninja_jsonapi.exceptions import HTTPException
-from django_ninja_jsonapi.exceptions.handlers import base_exception_handler
+from django_ninja_jsonapi.exceptions.handlers import base_exception_handler, pydantic_validation_exception_handler
 from django_ninja_jsonapi.renderers import JSONAPIRenderer
 from django_ninja_jsonapi.schema_base import BaseModel
 from django_ninja_jsonapi.schema_builder import SchemaBuilder
@@ -74,7 +74,7 @@ class ApplicationBuilder:
         models_storage.add_model(resource_type, model, model_id_field_name, path)
         views_storage.add_view(resource_type, view)
 
-        dto = SchemaBuilder(resource_type).create_schemas(
+        dto = SchemaBuilder(resource_type, model_id_field_name=model_id_field_name).create_schemas(
             schema=schema,
             schema_in_post=schema_in_post,
             schema_in_patch=schema_in_patch,
@@ -213,10 +213,16 @@ class ApplicationBuilder:
         if callable(add_handler):
             add_handler(HTTPException, self._exception_handler)
 
+            from pydantic import ValidationError
+
+            add_handler(ValidationError, pydantic_validation_exception_handler)
+
     @staticmethod
     def _response_for(data: ResourceData, operation: Operation):
         if operation == Operation.DELETE:
             return {HTTPStatus.NO_CONTENT: None}
+        if operation == Operation.CREATE:
+            return {HTTPStatus.CREATED: data.detail_response_schema}
         if operation == Operation.GET_LIST:
             return data.list_response_schema
         return data.detail_response_schema
