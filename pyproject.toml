@@ -37,7 +37,7 @@ dev = [
     "pytest-cov>=6.0.0",
     "pytest-django>=4.12.0",
     "ruff>=0.15.2",
-    "ty>=0.0.19",
+    "ty>=0.0.33",
     "zensical>=0.0.23",
 ]
 
@@ -55,24 +55,6 @@ django_find_project = false
 
 [tool.ty.src]
 exclude = ["docs/", "examples/"]
-
-# Pydantic's create_model() builds types at runtime from variables — these
-# dynamic type forms and overload expansions cannot be verified statically.
-[[tool.ty.overrides]]
-include = ["src/django_ninja_jsonapi/schema_factory.py", "src/django_ninja_jsonapi/model_schema.py"]
-
-[tool.ty.overrides.rules]
-invalid-type-form = "ignore"
-no-matching-overload = "ignore"
-
-# Tests exercise dynamically-created Pydantic models whose attributes only
-# exist at runtime, and intentionally pass invalid types to trigger errors.
-[[tool.ty.overrides]]
-include = ["tests/"]
-
-[tool.ty.overrides.rules]
-unresolved-attribute = "ignore"
-invalid-return-type = "ignore"
 
 [tool.coverage.run]
 branch = true
