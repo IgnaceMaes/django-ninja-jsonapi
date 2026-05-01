@@ -152,15 +152,17 @@ def model_schema(
     if exclude:
         field_names = [f for f in field_names if f not in exclude]
 
-    # Build pydantic field definitions
-    pydantic_fields: dict[str, tuple[Any, Any]] = {}
+    # Build pydantic field definitions.  Values are typed as Any because
+    # create_model() field tuples contain runtime-resolved types (e.g.
+    # Optional[python_type]) that are not valid static type expressions.
+    pydantic_fields: dict[str, Any] = {}
 
     for field_name in field_names:
         django_field = django_field_map.get(field_name)
 
         if django_field is not None:
-            # Known Django model field
-            python_type = _get_field_type(django_field)
+            # Known Django model field — type resolved at runtime
+            python_type: Any = _get_field_type(django_field)
             nullable = _is_field_nullable(django_field)
             has_def = _has_default(django_field)
 
@@ -174,7 +176,7 @@ def model_schema(
             # Not a database field — assume it's a @property or annotation.
             # Try to get a type hint from the model class.
             hints = getattr(model, "__annotations__", {})
-            prop_type = hints.get(field_name, Any)
+            prop_type: Any = hints.get(field_name, Any)
 
             # Check if it's actually a property on the model
             if not hasattr(model, field_name) and field_name not in hints:

@@ -34,7 +34,7 @@ class Article(models.Model):
     @property
     def organization_name(self) -> str:
         if self.organization:
-            return self.organization.name  # CharField → str at runtime
+            return str(self.organization.name)
         return ""
 
     class Meta:

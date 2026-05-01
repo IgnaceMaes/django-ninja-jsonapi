@@ -14,6 +14,11 @@ from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
 from django_ninja_jsonapi.renderers import JSONAPIRelationshipConfig, normalize_relationships
 
+# Alias so that _Lit[variable] is seen as Any[str] → Any by ty, avoiding
+# invalid-type-form for Literal[variable].  Pydantic handles dynamic Literal
+# types at runtime; the typing spec requires Literal args to be static values.
+_Lit: Any = Literal
+
 _RESPONSE_CACHE: dict[str, Type[BaseModel]] = {}
 _BODY_CACHE: dict[str, Type[Any]] = {}
 
@@ -150,33 +155,35 @@ def _cache_key(
     return f"{schema.__module__}.{schema.__qualname__}:{resource_type}:{many}:{rel_repr}:{suffix}"
 
 
-def _build_relationship_identifier_model(rel_config: JSONAPIRelationshipConfig) -> Type[BaseModel]:
+def _build_relationship_identifier_model(rel_config: JSONAPIRelationshipConfig) -> type[BaseModel]:
     """Build a model for ``{"id": "...", "type": "..."}``."""
     return create_model(
         f"{rel_config.resource_type.title().replace('-', '')}RelIdentifier",
         __config__=ConfigDict(extra="forbid"),
         id=(str, ...),
-        type=(Literal[rel_config.resource_type], rel_config.resource_type),
+        type=(_Lit[rel_config.resource_type], rel_config.resource_type),
     )
 
 
 def _build_relationship_fields(
     relationships: dict[str, JSONAPIRelationshipConfig],
-) -> dict[str, tuple[Any, Any]]:
+) -> dict[str, Any]:
     """Build pydantic field definitions for each relationship."""
-    fields: dict[str, tuple[Any, Any]] = {}
+    fields: dict[str, Any] = {}
 
     for rel_name, rel_config in relationships.items():
-        identifier = _build_relationship_identifier_model(rel_config)
+        # Annotated Any — create_model() returns type[BaseModel] which is
+        # not valid in type subscripts like list[x] / Optional[x].
+        identifier: Any = _build_relationship_identifier_model(rel_config)
 
         if rel_config.many:
-            data_model = create_model(
+            data_model: Any = create_model(
                 f"{rel_name.title().replace('-', '')}RelToMany",
                 data=(list[identifier], ...),
                 links=(Optional[RelationshipLinks], None),
             )
         else:
-            data_model = create_model(
+            data_model: Any = create_model(
                 f"{rel_name.title().replace('-', '')}RelToOne",
                 data=(Optional[identifier], None),
                 links=(Optional[RelationshipLinks], None),
@@ -331,24 +338,24 @@ def jsonapi_response(
         attr_fields[field_name] = (field_info.annotation, field_info)
 
     schema_name = schema.__name__.removesuffix("Schema")
-    attributes_model = create_model(
+    attributes_model: Any = create_model(
         f"{schema_name}Attributes",
         **attr_fields,
     )
 
     # --- relationships model (optional) ---
-    rel_field_defs = _build_relationship_fields(rels) if rels else {}
+    rel_field_defs: dict[str, Any] = _build_relationship_fields(rels) if rels else {}
 
     # --- resource object ---
     resource_object_fields: dict[str, Any] = {
         "id": (str, Field(description="Resource object ID", examples=["1"])),
-        "type": (Literal[resource_type], Field(default=resource_type, description="Resource type")),
+        "type": (_Lit[resource_type], Field(default=resource_type, description="Resource type")),
         "attributes": (attributes_model, Field(description="Resource object attributes")),
         "links": (Optional[ResourceLinks], Field(default=None, description="Resource links")),
     }
 
     if rel_field_defs:
-        relationships_model = create_model(
+        relationships_model: Any = create_model(
             f"{schema_name}Relationships",
             **rel_field_defs,
         )
@@ -357,20 +364,20 @@ def jsonapi_response(
             Field(default=None, description="Resource relationships"),
         )
 
-    resource_object_model = create_model(
+    resource_object_model: Any = create_model(
         f"{schema_name}ResourceObject",
         **resource_object_fields,
     )
 
     # --- meta ---
     if many:
-        meta_model = create_model(
+        meta_model: Any = create_model(
             f"{schema_name}ListMeta",
             count=(Optional[int], Field(default=None, examples=[100])),
             totalPages=(Optional[int], Field(default=None, alias="totalPages", examples=[5])),
         )
     else:
-        meta_model = None
+        meta_model: Any = None
 
     # --- top-level document ---
     doc_fields: dict[str, Any] = {}
@@ -459,11 +466,11 @@ def jsonapi_body(
     schema_name = schema.__name__.removesuffix("Schema")
 
     # --- relationship fields for input ---
-    rel_field_defs = _build_relationship_fields(rels) if rels else {}
+    rel_field_defs: dict[str, Any] = _build_relationship_fields(rels) if rels else {}
 
     # --- data item ---
     data_fields: dict[str, Any] = {
-        "type": (Literal[resource_type], Field(default=resource_type, description="Resource type")),
+        "type": (_Lit[resource_type], Field(default=resource_type, description="Resource type")),
         "attributes": (schema, Field(description="Resource object attributes")),
     }
 
@@ -471,7 +478,7 @@ def jsonapi_body(
         data_fields["id"] = (Optional[str], Field(default=None, description="Resource object ID"))
 
     if rel_field_defs:
-        relationships_model = create_model(
+        relationships_model: Any = create_model(
             f"{schema_name}InRelationships",
             **rel_field_defs,
         )

@@ -25,7 +25,7 @@ from __future__ import annotations
 import inspect
 import typing
 from functools import wraps
-from typing import Any, Callable, Type
+from typing import Any, Callable, Type, cast
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpRequest
@@ -223,11 +223,13 @@ def _wrap_single_schema(
     meta = get_jsonapi_meta(schema)
     if meta is None:
         # No explicit jsonapi_meta — not a JSON:API schema, pass through
-        return (list[schema] if many else schema, None)  # type: ignore[valid-type]
+        schema_type: Any = schema
+        annotation: Any = list[schema_type] if many else schema_type
+        return (annotation, None)
 
     resource_type = meta.resolve_resource_type(schema)
     relationships = detect_relationships(schema)
-    rels = {
+    rels: dict[str, Any] = {
         name: {"resource_type": rc.resource_type, "many": rc.many, "id_field": rc.id_field}
         for name, rc in relationships.items()
     }
@@ -236,7 +238,7 @@ def _wrap_single_schema(
         schema,
         resource_type,
         many=many,
-        relationships=rels or None,
+        relationships=rels if rels else None,
     )
     return wrapped, schema
 
@@ -284,7 +286,7 @@ def _wrap_view(
             _unwrap_body_params(request, kwargs, body_params)
             return await func(*args, **kwargs)
 
-        async_wrapper.__signature__ = new_sig  # type: ignore[attr-defined]
+        cast(Any, async_wrapper).__signature__ = new_sig
         return async_wrapper
 
     @wraps(func)
@@ -295,7 +297,7 @@ def _wrap_view(
         _unwrap_body_params(request, kwargs, body_params)
         return func(*args, **kwargs)
 
-    sync_wrapper.__signature__ = new_sig  # type: ignore[attr-defined]
+    cast(Any, sync_wrapper).__signature__ = new_sig
     return sync_wrapper
 
 
@@ -477,5 +479,5 @@ class NinjaJsonAPI(NinjaAPI):
         super().__init__(**kwargs)
 
         # Register JSON:API exception handlers
-        self.add_exception_handler(HTTPException, base_exception_handler)  # type: ignore[arg-type]
-        self.add_exception_handler(ObjectDoesNotExist, object_does_not_exist_handler)  # type: ignore[arg-type]
+        self.add_exception_handler(HTTPException, base_exception_handler)
+        self.add_exception_handler(ObjectDoesNotExist, object_does_not_exist_handler)
