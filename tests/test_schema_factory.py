@@ -320,3 +320,98 @@ class TestJsonapiBody:
                     "extra": "not allowed",
                 }
             )
+
+
+# ---------------------------------------------------------------------------
+# jsonapi_response raw-data acceptance tests
+# ---------------------------------------------------------------------------
+
+
+class TestJsonapiResponseRawData:
+    """jsonapi_response() models should accept raw endpoint data (dicts, lists,
+    Pydantic models) so that Django Ninja's response validation succeeds."""
+
+    def test_accepts_raw_dict_for_detail(self):
+        ResponseModel = jsonapi_response(ArticleSchema, "articles")
+
+        doc = ResponseModel.model_validate({"id": 1, "title": "Hello", "body": "World"})
+
+        assert doc.data.id == "1"
+        assert doc.data.type == "articles"
+        assert doc.data.attributes.title == "Hello"
+
+    def test_accepts_raw_list_for_collection(self):
+        ResponseModel = jsonapi_response(ArticleSchema, "articles", many=True)
+
+        doc = ResponseModel.model_validate(
+            [
+                {"id": 1, "title": "A", "body": "B"},
+                {"id": 2, "title": "C", "body": "D"},
+            ]
+        )
+
+        assert len(doc.data) == 2
+        assert doc.data[0].id == "1"
+        assert doc.data[1].id == "2"
+
+    def test_accepts_pydantic_model_for_detail(self):
+        ResponseModel = jsonapi_response(ArticleSchema, "articles")
+        article = ArticleSchema(id=1, title="From Pydantic", body="Content")
+
+        doc = ResponseModel.model_validate(article)
+
+        assert doc.data.id == "1"
+        assert doc.data.attributes.title == "From Pydantic"
+
+    def test_accepts_list_of_pydantic_models_for_collection(self):
+        ResponseModel = jsonapi_response(ArticleSchema, "articles", many=True)
+        articles = [
+            ArticleSchema(id=1, title="First", body="A"),
+            ArticleSchema(id=2, title="Second", body="B"),
+        ]
+
+        doc = ResponseModel.model_validate(articles)
+
+        assert len(doc.data) == 2
+        assert doc.data[0].attributes.title == "First"
+
+    def test_still_accepts_valid_jsonapi_document(self):
+        ResponseModel = jsonapi_response(ArticleSchema, "articles")
+
+        doc = ResponseModel.model_validate(
+            {
+                "data": {
+                    "id": "1",
+                    "type": "articles",
+                    "attributes": {"title": "Hello", "body": "World"},
+                },
+            }
+        )
+
+        assert doc.data.id == "1"
+
+    def test_raw_dict_with_relationships(self):
+        ResponseModel = jsonapi_response(
+            ArticleWithRelsSchema,
+            "articles",
+            relationships={"author": {"resource_type": "people"}},
+        )
+
+        doc = ResponseModel.model_validate(
+            {"id": 1, "title": "Hello", "author": {"id": 9}}
+        )
+
+        assert doc.data.id == "1"
+        assert doc.data.attributes.title == "Hello"
+        assert doc.data.relationships.author.data.id == "9"
+        assert doc.data.relationships.author.data.type == "people"
+
+    def test_model_dump_produces_jsonapi_document(self):
+        ResponseModel = jsonapi_response(ArticleSchema, "articles")
+
+        doc = ResponseModel.model_validate({"id": 1, "title": "Hello", "body": "World"})
+        dumped = doc.model_dump(exclude_none=True)
+
+        assert "data" in dumped
+        assert dumped["data"]["type"] == "articles"
+        assert dumped["data"]["attributes"]["title"] == "Hello"

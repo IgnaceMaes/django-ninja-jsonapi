@@ -211,7 +211,7 @@ def list_articles(request):
 
 ## OpenAPI schema generation
 
-By default, the OpenAPI docs show your flat Pydantic schema rather than the JSON:API envelope. Use `jsonapi_response()` to generate a proper JSON:API response schema:
+Use `jsonapi_response()` to generate a proper JSON:API response schema for OpenAPI docs. The generated model also accepts raw endpoint return values (dicts, lists, Pydantic models) at runtime, so Django Ninja's response validation succeeds — the renderer then passes the already-wrapped document through unchanged:
 
 ```python
 from django_ninja_jsonapi import jsonapi_resource, jsonapi_response
@@ -229,20 +229,16 @@ def list_articles(request):
     return [{"id": 1, "title": "Hello"}, {"id": 2, "title": "World"}]
 ```
 
-The generated schema includes `data.id`, `data.type`, `data.attributes`, `data.relationships`, `links`, `jsonapi`, `meta`, and `included` — matching the actual JSON:API response structure in Swagger UI.
-
-You can also pass `relationships` to include relationship schemas:
+Alternatively, use plain schemas for the response type and rely on `JSONAPIRenderer` + `@jsonapi_resource` for the JSON:API envelope:
 
 ```python
-@api.get(
-    "/articles/{article_id}",
-    response=jsonapi_response(
-        ArticleSchema,
-        "articles",
-        relationships={"author": {"resource_type": "people"}},
-    ),
-)
+@api.get("/articles/{article_id}", response=ArticleSchema)
+@jsonapi_resource("articles")
+def get_article(request, article_id: int):
+    return {"id": article_id, "title": "Hello"}
 ```
+
+In this case OpenAPI docs will show the flat schema rather than the JSON:API envelope, but the actual response will still be wrapped by the renderer.
 
 ## Parsing JSON:API request bodies
 
@@ -319,8 +315,7 @@ This accepts:
 When using `setup_jsonapi()`, JSON:API error responses are handled automatically. You can raise `HTTPException` subclasses anywhere:
 
 ```python
-from django_ninja_jsonapi import BadRequest, HTTPException
-from django_ninja_jsonapi.exceptions import NotFound
+from django_ninja_jsonapi import BadRequest, HTTPException, NotFound
 
 # Raises a 400 Bad Request with JSON:API error format
 raise BadRequest(detail="Invalid input", pointer="title")
@@ -329,14 +324,100 @@ raise BadRequest(detail="Invalid input", pointer="title")
 raise NotFound(detail="Article not found")
 ```
 
-If not using `setup_jsonapi()`, register the handler manually:
+### Django's ObjectDoesNotExist
+
+`setup_jsonapi()` also registers a handler for `django.core.exceptions.ObjectDoesNotExist`. This means `Model.DoesNotExist` exceptions (including those from `get_object_or_404`) are automatically rendered as JSON:API error documents:
 
 ```python
+@api.get("/articles/{article_id}")
+@jsonapi_resource("articles")
+def get_article(request, article_id: int):
+    # If the article doesn't exist, the response will be a JSON:API 404 error
+    article = Article.objects.get(id=article_id)
+    return {"id": article.id, "title": article.title}
+```
+
+If not using `setup_jsonapi()`, register the handlers manually:
+
+```python
+from django.core.exceptions import ObjectDoesNotExist
+
 from django_ninja_jsonapi.exceptions import HTTPException
-from django_ninja_jsonapi.exceptions.handlers import base_exception_handler
+from django_ninja_jsonapi.exceptions.handlers import base_exception_handler, object_does_not_exist_handler
 
 api.add_exception_handler(HTTPException, base_exception_handler)
+api.add_exception_handler(ObjectDoesNotExist, object_does_not_exist_handler)
 ```
+
+## Sorting
+
+Use `jsonapi_sort()` to apply the `?sort=` query parameter per JSON:API spec:
+
+```python
+from django_ninja_jsonapi import jsonapi_paginate, jsonapi_resource, jsonapi_sort
+
+
+@api.get("/articles")
+@jsonapi_resource("articles")
+def list_articles(request):
+    qs = Article.objects.all()
+    qs = jsonapi_sort(request, qs, allowed_fields={"name", "created_dt"})
+    return jsonapi_paginate(request, qs)
+```
+
+Clients request ordering with `?sort=-created_dt,name` which translates to
+`qs.order_by("-created_dt", "name")`. Relationship paths use dots:
+`?sort=author.name` → `order_by("author__name")`.
+
+The `allowed_fields` parameter restricts which fields can be sorted on.
+Fields not in the set are silently ignored.
+
+## Filtering
+
+Use `jsonapi_filter()` to apply `?filter[field]=value` query parameters:
+
+```python
+from django_ninja_jsonapi import jsonapi_filter, jsonapi_paginate, jsonapi_resource
+
+
+@api.get("/articles")
+@jsonapi_resource("articles")
+def list_articles(request):
+    qs = Article.objects.all()
+    qs = jsonapi_filter(request, qs, allowed_fields={"status", "author"})
+    qs = jsonapi_sort(request, qs, allowed_fields={"name", "created_dt"})
+    return jsonapi_paginate(request, qs)
+```
+
+Clients send `?filter[status]=published&filter[author]=5`. Relationship
+paths use dots: `?filter[author.name]=Alice` → `.filter(author__name="Alice")`.
+
+The `allowed_fields` parameter restricts which fields can be filtered on.
+Fields not in the set are silently ignored.
+
+## Parsing include
+
+Use `parse_include()` to parse the `?include=` query parameter into a set of
+dot-separated paths:
+
+```python
+from django_ninja_jsonapi import jsonapi_include, jsonapi_resource, parse_include
+
+
+@api.get("/articles/{article_id}")
+@jsonapi_resource("articles", relationships={"author": {"resource_type": "people"}})
+def get_article(request, article_id: int):
+    includes = parse_include(request)
+    article = Article.objects.select_related("author").get(id=article_id)
+    data = {"id": article.id, "title": article.title, "author": {"id": article.author_id}}
+    if "author" in includes:
+        jsonapi_include(
+            request, {"id": article.author.id, "name": article.author.name}, resource_type="people"
+        )
+    return data
+```
+
+`?include=author,comments.user` → `{"author", "comments.user"}`.
 
 ## Full CRUD example
 

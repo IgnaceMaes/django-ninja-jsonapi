@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, Optional, Type
 
-from pydantic import BaseModel, ConfigDict, Field, create_model
+from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
 from django_ninja_jsonapi.renderers import JSONAPIRelationshipConfig, normalize_relationships
 
@@ -122,6 +122,111 @@ def _build_relationship_fields(
 
 
 # ---------------------------------------------------------------------------
+# Raw-data coercion: lets jsonapi_response() models accept raw endpoint data
+# ---------------------------------------------------------------------------
+
+
+def _coerce_item_to_dict(item: Any) -> dict[str, Any] | None:
+    """Coerce a single item (dict, Pydantic model) to a plain dict."""
+    if isinstance(item, dict):
+        return item
+    try:
+        from pydantic import BaseModel as _PBM
+
+        if isinstance(item, _PBM):
+            return item.model_dump()
+    except ImportError:  # pragma: no cover
+        pass
+    return None
+
+
+def _wrap_resource(
+    item: dict[str, Any],
+    *,
+    resource_type: str,
+    rels: dict[str, JSONAPIRelationshipConfig],
+) -> dict[str, Any]:
+    """Wrap a flat dict into a JSON:API resource object structure."""
+    rel_keys = set(rels.keys())
+    attrs = {k: v for k, v in item.items() if k != "id" and k not in rel_keys}
+    resource: dict[str, Any] = {
+        "id": str(item.get("id", "")),
+        "type": resource_type,
+        "attributes": attrs,
+    }
+
+    if rels:
+        relationships: dict[str, Any] = {}
+        for rel_name, rel_config in rels.items():
+            value = item.get(rel_name)
+            if value is None:
+                continue
+            if rel_config.many:
+                if isinstance(value, list):
+                    relationships[rel_name] = {
+                        "data": [
+                            {"id": str(v.get(rel_config.id_field, "")), "type": rel_config.resource_type}
+                            if isinstance(v, dict)
+                            else {"id": str(v), "type": rel_config.resource_type}
+                            for v in value
+                        ]
+                    }
+            else:
+                if isinstance(value, dict):
+                    relationships[rel_name] = {
+                        "data": {
+                            "id": str(value.get(rel_config.id_field, "")),
+                            "type": rel_config.resource_type,
+                        }
+                    }
+                else:
+                    relationships[rel_name] = {
+                        "data": {"id": str(value), "type": rel_config.resource_type}
+                    }
+        if relationships:
+            resource["relationships"] = relationships
+
+    return resource
+
+
+def _coerce_raw_to_document(
+    data: Any,
+    *,
+    resource_type: str,
+    many: bool,
+    rels: dict[str, JSONAPIRelationshipConfig],
+) -> Any:
+    """Convert raw endpoint return values to a JSON:API document dict.
+
+    Already-valid JSON:API documents (containing ``data``, ``errors`` or
+    ``jsonapi`` top-level keys) are returned unchanged.
+    """
+    # Already a JSON:API document — pass through
+    if isinstance(data, dict) and ("data" in data or "errors" in data or "jsonapi" in data):
+        return data
+
+    # Single item (dict or Pydantic model) for a detail endpoint
+    coerced = _coerce_item_to_dict(data)
+    if coerced is not None and not many:
+        return {"data": _wrap_resource(coerced, resource_type=resource_type, rels=rels)}
+
+    # Collection endpoint
+    if isinstance(data, list) and many:
+        resources = []
+        for item in data:
+            as_dict = _coerce_item_to_dict(item)
+            if as_dict is not None:
+                resources.append(_wrap_resource(as_dict, resource_type=resource_type, rels=rels))
+        return {"data": resources}
+
+    # Single item returned for a many=True schema (wrap into list)
+    if coerced is not None and many:
+        return {"data": [_wrap_resource(coerced, resource_type=resource_type, rels=rels)]}
+
+    return data
+
+
+# ---------------------------------------------------------------------------
 # jsonapi_response – generates a response schema for OpenAPI docs
 # ---------------------------------------------------------------------------
 
@@ -223,8 +328,24 @@ def jsonapi_response(
         Field(default=None, description="Included related resources"),
     )
 
+    # Build a base class with a validator that accepts raw endpoint data
+    # (dict / list / Pydantic model) and wraps it into JSON:API structure so
+    # Django Ninja's response validation succeeds.  The renderer already
+    # detects pre-wrapped documents via ``_is_jsonapi_document`` and passes
+    # them through unchanged.
+    _rt = resource_type
+    _many = many
+    _rels = rels
+
+    class _DocumentBase(BaseModel):
+        @model_validator(mode="before")
+        @classmethod
+        def _accept_raw_data(cls, data: Any) -> Any:  # noqa: N805
+            return _coerce_raw_to_document(data, resource_type=_rt, many=_many, rels=_rels)
+
     document_model = create_model(
         f"{schema_name}JsonApiResponse" if not many else f"{schema_name}JsonApiListResponse",
+        __base__=_DocumentBase,
         **doc_fields,
     )
 

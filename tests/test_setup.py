@@ -25,13 +25,18 @@ class TestSetupJsonapi:
         api.add_exception_handler = MagicMock()
         setup_jsonapi(api)
 
-        api.add_exception_handler.assert_called_once()
-        from django_ninja_jsonapi.exceptions import HTTPException
-        from django_ninja_jsonapi.exceptions.handlers import base_exception_handler
+        from django.core.exceptions import ObjectDoesNotExist
 
-        call_args = api.add_exception_handler.call_args
-        assert call_args[0][0] is HTTPException
-        assert call_args[0][1] is base_exception_handler
+        from django_ninja_jsonapi.exceptions import HTTPException
+        from django_ninja_jsonapi.exceptions.handlers import base_exception_handler, object_does_not_exist_handler
+
+        assert api.add_exception_handler.call_count == 2
+
+        calls = api.add_exception_handler.call_args_list
+        assert calls[0][0][0] is HTTPException
+        assert calls[0][0][1] is base_exception_handler
+        assert calls[1][0][0] is ObjectDoesNotExist
+        assert calls[1][0][1] is object_does_not_exist_handler
 
     def test_custom_exception_handler(self):
         api = NinjaAPI()
@@ -42,5 +47,5 @@ class TestSetupJsonapi:
 
         setup_jsonapi(api, exception_handler=custom_handler)
 
-        call_args = api.add_exception_handler.call_args
-        assert call_args[0][1] is custom_handler
+        calls = api.add_exception_handler.call_args_list
+        assert calls[0][0][1] is custom_handler

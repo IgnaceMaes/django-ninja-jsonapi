@@ -258,3 +258,150 @@ def jsonapi_cursor_pagination(
 
     if links:
         jsonapi_links(request, **links)
+
+
+# ---------------------------------------------------------------------------
+# Sorting helper
+# ---------------------------------------------------------------------------
+
+
+def jsonapi_sort(
+    request: HttpRequest,
+    queryset: Any,
+    *,
+    allowed_fields: set[str] | None = None,
+) -> Any:
+    """Apply JSON:API ``?sort=`` ordering to a Django ``QuerySet``.
+
+    Parses ``?sort=-created_dt,name`` into
+    ``queryset.order_by("-created_dt", "name")``.
+
+    Args:
+        request: The current HTTP request.
+        queryset: A Django ``QuerySet`` to order.
+        allowed_fields: Optional allow-list of field names.  If provided,
+            fields not in the set are silently ignored.
+
+    Returns:
+        The ordered ``QuerySet``.
+
+    Example::
+
+        @api.get("/articles")
+        @jsonapi_resource("articles")
+        def list_articles(request):
+            qs = Article.objects.all()
+            qs = jsonapi_sort(request, qs, allowed_fields={"name", "created_dt"})
+            return jsonapi_paginate(request, qs)
+    """
+    sort_param = request.GET.get("sort")
+    if not sort_param:
+        return queryset
+
+    order_by: list[str] = []
+    for part in sort_param.split(","):
+        part = part.strip()
+        if not part:
+            continue
+
+        descending = part.startswith("-")
+        field_name = part.lstrip("-")
+
+        if allowed_fields is not None and field_name not in allowed_fields:
+            continue
+
+        # Convert dot-separated relationship paths to Django ORM lookups
+        orm_field = field_name.replace(".", "__")
+        if descending:
+            orm_field = f"-{orm_field}"
+        order_by.append(orm_field)
+
+    if order_by:
+        queryset = queryset.order_by(*order_by)
+    return queryset
+
+
+# ---------------------------------------------------------------------------
+# Include parser
+# ---------------------------------------------------------------------------
+
+
+def parse_include(request: HttpRequest) -> set[str]:
+    """Parse the ``?include=`` query parameter into a set of dot-separated paths.
+
+    Returns an empty set when the parameter is absent.
+
+    Example::
+
+        @api.get("/articles/{article_id}")
+        @jsonapi_resource("articles", relationships={"author": {"resource_type": "people"}})
+        def get_article(request, article_id: int):
+            includes = parse_include(request)
+            article = Article.objects.get(id=article_id)
+            data = {"id": article.id, "title": article.title, "author": {"id": article.author_id}}
+            if "author" in includes:
+                jsonapi_include(request, {"id": article.author.id, "name": article.author.name}, resource_type="people")
+            return data
+    """
+    include_param = request.GET.get("include", "")
+    if not include_param:
+        return set()
+    return {path.strip() for path in include_param.split(",") if path.strip()}
+
+
+# ---------------------------------------------------------------------------
+# Filter helper
+# ---------------------------------------------------------------------------
+
+
+def jsonapi_filter(
+    request: HttpRequest,
+    queryset: Any,
+    *,
+    allowed_fields: set[str] | None = None,
+) -> Any:
+    """Apply JSON:API ``?filter[field]=value`` filters to a Django ``QuerySet``.
+
+    Supports simple equality filters in bracket notation
+    (``?filter[status]=active&filter[author]=5``).
+
+    Args:
+        request: The current HTTP request.
+        queryset: A Django ``QuerySet`` to filter.
+        allowed_fields: Optional allow-list of field names.  If provided,
+            fields not in the set are silently ignored.
+
+    Returns:
+        The filtered ``QuerySet``.
+
+    Example::
+
+        @api.get("/articles")
+        @jsonapi_resource("articles")
+        def list_articles(request):
+            qs = Article.objects.all()
+            qs = jsonapi_filter(request, qs, allowed_fields={"status", "author"})
+            return jsonapi_paginate(request, qs)
+    """
+    from urllib.parse import unquote
+
+    from django.db.models import Q
+
+    q = Q()
+    for raw_key in request.GET:
+        key = unquote(raw_key)
+        if not key.startswith("filter[") or not key.endswith("]"):
+            continue
+
+        field_name = key[len("filter[") : -1]
+
+        if allowed_fields is not None and field_name not in allowed_fields:
+            continue
+
+        value = request.GET[raw_key]
+        orm_field = field_name.replace(".", "__")
+        q &= Q(**{orm_field: value})
+
+    if q:
+        queryset = queryset.filter(q)
+    return queryset
