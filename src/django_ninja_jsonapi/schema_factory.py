@@ -8,7 +8,7 @@ Generate Pydantic models that represent JSON:API document structures so that:
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Type
+from typing import Any, Generic, Literal, Optional, Type, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
@@ -16,6 +16,72 @@ from django_ninja_jsonapi.renderers import JSONAPIRelationshipConfig, normalize_
 
 _RESPONSE_CACHE: dict[str, Type[BaseModel]] = {}
 _BODY_CACHE: dict[str, Type[BaseModel]] = {}
+
+# ---------------------------------------------------------------------------
+# Generic base classes for type-checker / IDE support
+# ---------------------------------------------------------------------------
+
+TAttributes = TypeVar("TAttributes", bound=BaseModel)
+
+
+class JsonApiRelationships(BaseModel):
+    """Base class for relationships — extended dynamically by ``jsonapi_body()``."""
+
+
+class JsonApiDataIn(BaseModel, Generic[TAttributes]):
+    """Typed wrapper around the ``data`` field of a JSON:API body.
+
+    Provides ``get_rel_id`` and ``get_rel_ids`` for convenient relationship
+    access.  The actual class used at runtime is a ``create_model()`` subclass;
+    this generic exists so that type checkers can infer ``.attributes`` as
+    ``TAttributes``.
+    """
+
+    type: str = ""
+    attributes: TAttributes  # type: ignore[assignment]
+
+    def get_rel_id(self, name: str) -> str | None:
+        """Get the ID of a to-one relationship by name, or ``None``."""
+        rels = getattr(self, "relationships", None)
+        if rels is None:
+            return None
+        rel = getattr(rels, name, None)
+        if rel is None or rel.data is None:
+            return None
+        return rel.data.id
+
+    def get_rel_ids(self, name: str) -> list[str]:
+        """Get the IDs of a to-many relationship by name."""
+        rels = getattr(self, "relationships", None)
+        if rels is None:
+            return []
+        rel = getattr(rels, name, None)
+        if rel is None or rel.data is None:
+            return []
+        return [item.id for item in rel.data]
+
+
+class JsonApiBody(BaseModel, Generic[TAttributes]):
+    """Typed wrapper around a JSON:API request body.
+
+    Use as a type annotation with a type parameter for full IDE support::
+
+        body: JsonApiBody[ArticleCreateSchema]
+        body.data.attributes.title  # ← autocomplete works
+
+    At runtime the actual class is still built by ``jsonapi_body()``, but this
+    generic provides the type information that checkers and IDEs need.
+    """
+
+    data: JsonApiDataIn[TAttributes]
+
+    def get_rel_id(self, name: str) -> str | None:
+        """Shortcut: delegates to ``self.data.get_rel_id(name)``."""
+        return self.data.get_rel_id(name)
+
+    def get_rel_ids(self, name: str) -> list[str]:
+        """Shortcut: delegates to ``self.data.get_rel_ids(name)``."""
+        return self.data.get_rel_ids(name)
 
 
 # ---------------------------------------------------------------------------
@@ -362,7 +428,7 @@ def jsonapi_body(
     *,
     relationships: dict[str, JSONAPIRelationshipConfig | dict[str, Any]] | None = None,
     allow_id: bool = False,
-) -> Type[BaseModel]:
+) -> Type[JsonApiBody[Any]]:
     """
     Build a Pydantic model representing a JSON:API request body.
 
@@ -413,8 +479,10 @@ def jsonapi_body(
             Field(default=None, description="Resource relationships"),
         )
 
+    # Build the DataIn model using the generic base for type-checker support
     data_item_model = create_model(
         f"{schema_name}DataIn",
+        __base__=JsonApiDataIn,
         __config__=ConfigDict(extra="forbid"),
         **data_fields,
     )
@@ -422,6 +490,7 @@ def jsonapi_body(
     # --- top-level wrapper ---
     body_model = create_model(
         f"{schema_name}JsonApiBody",
+        __base__=JsonApiBody,
         __config__=ConfigDict(extra="forbid"),
         data=(data_item_model, Field(description="JSON:API data")),
     )

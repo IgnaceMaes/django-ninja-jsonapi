@@ -395,6 +395,20 @@ paths use dots: `?filter[author.name]=Alice` → `.filter(author__name="Alice")`
 The `allowed_fields` parameter restricts which fields can be filtered on.
 Fields not in the set are silently ignored.
 
+### Field name aliasing
+
+Use `field_map` when the JSON:API filter name differs from the ORM field:
+
+```python
+qs = jsonapi_filter(
+    request, qs,
+    allowed_fields={"status", "appointment_date"},
+    field_map={"appointment_date": "appointment_dt__date"},
+)
+```
+
+Clients filter with `?filter[appointment_date]=2024-01-01` while the query targets `appointment_dt__date`. Fields not in `field_map` use the default dot-to-underscore conversion.
+
 ## Parsing include
 
 Use `parse_include()` to parse the `?include=` query parameter into a set of

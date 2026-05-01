@@ -24,6 +24,7 @@ def jsonapi_resource(
     include_jsonapi_object: object = _UNSET,
     jsonapi_version: str | None = None,
     relationships: dict[str, JSONAPIRelationshipConfig | dict[str, Any]] | None = None,
+    schema: Any = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     relationship_config = normalize_relationships(relationships)
 
@@ -41,6 +42,7 @@ def jsonapi_resource(
             include_jsonapi_object=bool(resolved_include),
             jsonapi_version=str(resolved_version),
             relationships=relationship_config,
+            schema=schema,
         )
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
