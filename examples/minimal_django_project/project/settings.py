@@ -67,7 +67,7 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 NINJA_JSONAPI = {
-    "PAGE_SIZE": 20,
+    "DEFAULT_PAGE_SIZE": 20,
     "MAX_PAGE_SIZE": 20,
     "MAX_INCLUDE_DEPTH": 3,
     "ALLOW_DISABLE_PAGINATION": False,

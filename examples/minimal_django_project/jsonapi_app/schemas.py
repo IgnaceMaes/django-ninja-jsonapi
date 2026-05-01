@@ -1,33 +1,28 @@
-from typing import Annotated
+from typing import ClassVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from django_ninja_jsonapi.types_metadata import RelationshipInfo
-
-
-class CustomerRefSchema(BaseModel):
-    id: int
-    name: str
-    email: str
+from django_ninja_jsonapi import JsonApiMeta
 
 
 class ComputerSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     serial: str
-    owner: Annotated[
-        CustomerRefSchema | None,
-        RelationshipInfo(resource_type="customer"),
-    ] = None
+
+    jsonapi_meta: ClassVar[JsonApiMeta] = JsonApiMeta(resource_type="computers")
 
 
 class CustomerSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     email: str
-    computers: Annotated[
-        list[ComputerSchema],
-        RelationshipInfo(resource_type="computer", many=True),
-    ] = []
+    computers: list[ComputerSchema] = []
+
+    jsonapi_meta: ClassVar[JsonApiMeta] = JsonApiMeta(resource_type="customers")
 
 
 class CustomerSchemaIn(BaseModel):
