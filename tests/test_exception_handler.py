@@ -34,7 +34,7 @@ def test_pydantic_validation_exception_handler_returns_jsonapi_errors():
         age: int
 
     try:
-        StrictModel(name=123, age="not-a-number")
+        StrictModel(name=123, age="not-a-number")  # ty: ignore[invalid-argument-type]
     except ValidationError as exc:
         response = pydantic_validation_exception_handler(request, exc)
 
@@ -58,7 +58,7 @@ def test_pydantic_validation_error_pointer_includes_field_location():
         email: str
 
     try:
-        StrictModel()  # missing required field
+        StrictModel()  # ty: ignore[missing-argument]
     except ValidationError as exc:
         response = pydantic_validation_exception_handler(request, exc)
 

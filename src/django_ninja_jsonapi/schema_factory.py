@@ -178,7 +178,7 @@ def _build_relationship_fields(
         else:
             data_model = create_model(
                 f"{rel_name.title().replace('-', '')}RelToOne",
-                data=(Optional[identifier], None),
+                data=(Optional[identifier], None),  # ty: ignore[invalid-type-form]
                 links=(Optional[RelationshipLinks], None),
             )
 

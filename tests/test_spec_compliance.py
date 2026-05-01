@@ -780,7 +780,7 @@ class TestCreatingResources:
             return 201, {
                 "id": 1,
                 "title": body.title,
-                "author": {"id": int(captured["author_id"]), "first_name": "A", "last_name": "B"},
+                "author": {"id": int(captured["author_id"]), "first_name": "A", "last_name": "B"},  # ty: ignore[invalid-argument-type]
                 "tags": [{"id": int(tid), "name": f"tag-{tid}"} for tid in captured["tag_ids"]],
             }
 

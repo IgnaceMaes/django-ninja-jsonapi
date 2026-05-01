@@ -130,9 +130,9 @@ class TestJsonapiResponse:
                 "jsonapi": {"version": "1.0"},
             }
         )
-        assert doc.data.id == "1"
-        assert doc.data.type == "articles"
-        assert doc.data.attributes.title == "Hello"
+        assert doc.data.id == "1"  # ty: ignore[unresolved-attribute]
+        assert doc.data.type == "articles"  # ty: ignore[unresolved-attribute]
+        assert doc.data.attributes.title == "Hello"  # ty: ignore[unresolved-attribute]
 
     def test_generated_list_model_validates(self):
         ResponseModel = jsonapi_response(ArticleSchema, "articles", many=True)
@@ -154,7 +154,7 @@ class TestJsonapiResponse:
                 "meta": {"count": 2, "totalPages": 1},
             }
         )
-        assert len(doc.data) == 2
+        assert len(doc.data) == 2  # ty: ignore[unresolved-attribute]
 
     def test_with_relationship_config_objects(self):
         ResponseModel = jsonapi_response(
@@ -253,8 +253,8 @@ class TestJsonapiBody:
                 }
             }
         )
-        assert parsed.data.relationships.author.data.id == "9"
-        assert parsed.data.relationships.author.data.type == "people"
+        assert parsed.data.relationships.author.data.id == "9"  # ty: ignore[unresolved-attribute]
+        assert parsed.data.relationships.author.data.type == "people"  # ty: ignore[unresolved-attribute]
 
     def test_parses_body_with_many_relationship(self):
         BodyModel = jsonapi_body(
@@ -279,7 +279,7 @@ class TestJsonapiBody:
                 }
             }
         )
-        assert len(parsed.data.relationships.tags.data) == 2
+        assert len(parsed.data.relationships.tags.data) == 2  # ty: ignore[unresolved-attribute]
 
     def test_attributes_model_dump(self):
         BodyModel = jsonapi_body(ArticleCreateSchema, "articles")
@@ -336,9 +336,9 @@ class TestJsonapiResponseRawData:
 
         doc = ResponseModel.model_validate({"id": 1, "title": "Hello", "body": "World"})
 
-        assert doc.data.id == "1"
-        assert doc.data.type == "articles"
-        assert doc.data.attributes.title == "Hello"
+        assert doc.data.id == "1"  # ty: ignore[unresolved-attribute]
+        assert doc.data.type == "articles"  # ty: ignore[unresolved-attribute]
+        assert doc.data.attributes.title == "Hello"  # ty: ignore[unresolved-attribute]
 
     def test_accepts_raw_list_for_collection(self):
         ResponseModel = jsonapi_response(ArticleSchema, "articles", many=True)
@@ -350,9 +350,9 @@ class TestJsonapiResponseRawData:
             ]
         )
 
-        assert len(doc.data) == 2
-        assert doc.data[0].id == "1"
-        assert doc.data[1].id == "2"
+        assert len(doc.data) == 2  # ty: ignore[unresolved-attribute]
+        assert doc.data[0].id == "1"  # ty: ignore[unresolved-attribute]
+        assert doc.data[1].id == "2"  # ty: ignore[unresolved-attribute]
 
     def test_accepts_pydantic_model_for_detail(self):
         ResponseModel = jsonapi_response(ArticleSchema, "articles")
@@ -360,8 +360,8 @@ class TestJsonapiResponseRawData:
 
         doc = ResponseModel.model_validate(article)
 
-        assert doc.data.id == "1"
-        assert doc.data.attributes.title == "From Pydantic"
+        assert doc.data.id == "1"  # ty: ignore[unresolved-attribute]
+        assert doc.data.attributes.title == "From Pydantic"  # ty: ignore[unresolved-attribute]
 
     def test_accepts_list_of_pydantic_models_for_collection(self):
         ResponseModel = jsonapi_response(ArticleSchema, "articles", many=True)
@@ -372,8 +372,8 @@ class TestJsonapiResponseRawData:
 
         doc = ResponseModel.model_validate(articles)
 
-        assert len(doc.data) == 2
-        assert doc.data[0].attributes.title == "First"
+        assert len(doc.data) == 2  # ty: ignore[unresolved-attribute]
+        assert doc.data[0].attributes.title == "First"  # ty: ignore[unresolved-attribute]
 
     def test_still_accepts_valid_jsonapi_document(self):
         ResponseModel = jsonapi_response(ArticleSchema, "articles")
@@ -388,7 +388,7 @@ class TestJsonapiResponseRawData:
             }
         )
 
-        assert doc.data.id == "1"
+        assert doc.data.id == "1"  # ty: ignore[unresolved-attribute]
 
     def test_raw_dict_with_relationships(self):
         ResponseModel = jsonapi_response(
@@ -399,10 +399,10 @@ class TestJsonapiResponseRawData:
 
         doc = ResponseModel.model_validate({"id": 1, "title": "Hello", "author": {"id": 9}})
 
-        assert doc.data.id == "1"
-        assert doc.data.attributes.title == "Hello"
-        assert doc.data.relationships.author.data.id == "9"
-        assert doc.data.relationships.author.data.type == "people"
+        assert doc.data.id == "1"  # ty: ignore[unresolved-attribute]
+        assert doc.data.attributes.title == "Hello"  # ty: ignore[unresolved-attribute]
+        assert doc.data.relationships.author.data.id == "9"  # ty: ignore[unresolved-attribute]
+        assert doc.data.relationships.author.data.type == "people"  # ty: ignore[unresolved-attribute]
 
     def test_model_dump_produces_jsonapi_document(self):
         ResponseModel = jsonapi_response(ArticleSchema, "articles")
