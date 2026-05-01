@@ -1,45 +1,37 @@
 [project]
 site_name = "django-ninja-jsonapi"
-site_url = "https://ignacemaes.github.io/django-ninja-jsonapi/"
+site_url = "https://ignacemaes.com/django-ninja-jsonapi/"
 nav = [
   {"Home" = "index.md"},
   {"Getting Started" = [
     "getting-started.md",
     {"Installation" = "installation.md"},
     {"Quickstart" = "quickstart.md"},
-    {"Standalone renderer" = "standalone_renderer.md"},
-    {"Minimal API (head)" = "minimal_api_head.md"},
-    {"Minimal API example" = "minimal_api_example.md"}
+    {"Transparent JSON:API" = "transparent_jsonapi.md"}
   ]},
   {"Usage" = [
     "usage.md",
-    {"Routing" = "routing.md"},
     {"Configuration" = "configuration.md"},
-    {"Data layer" = "data_layer.md"},
     {"Logical data abstraction" = "logical_data_abstraction.md"},
-    {"Relationships" = "relationships.md"},
+    {"Model schema" = "model_schema.md"},
     {"Include related objects" = "include_related_objects.md"},
     {"Include many-to-many" = "include_many_to_many.md"},
     {"Updated includes example" = "updated_includes_example.md"},
     {"Client-generated ID" = "client_generated_id.md"},
     {"Filtering" = "filtering.md"},
-    {"Custom filtering" = "custom_sql_filtering.md"},
     {"Sorting" = "sorting.md"},
     {"Sparse fieldsets" = "sparse_fieldsets.md"},
     {"Pagination" = "pagination.md"},
-    {"Atomic operations" = "atomic_operations.md"},
-    {"View dependencies" = "view_dependencies.md"},
+    {"Content negotiation" = "content_negotiation.md"},
+    {"Inflection" = "inflection.md"},
     {"Errors" = "errors.md"},
-    {"Permission" = "permission.md"},
     {"OAuth" = "oauth.md"}
   ]},
   {"Examples" = [
     "examples.md",
-    {"API filtering example" = "api_filtering_example.md"},
-    {"Limited methods example" = "api_limited_methods_example.md"}
+    {"API filtering example" = "api_filtering_example.md"}
   ]},
   {"Integrations" = [
-    {"fastapi-jsonapi topic alias" = "fastapi-jsonapi.md"},
     {"django-ninja-jsonapi package" = "django-ninja-jsonapi.md"}
   ]},
   {"API Reference" = "api-reference.md"},

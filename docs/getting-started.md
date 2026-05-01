@@ -5,7 +5,8 @@ This section helps you go from installation to a working JSON:API endpoint.
 ## Path
 
 1. [Installation](installation.md)
-2. [Transparent JSON:API](transparent_jsonapi.md)
+2. [Quickstart](quickstart.md)
+3. [Transparent JSON:API](transparent_jsonapi.md)
 
 ## What to read next
 
