@@ -1,15 +1,15 @@
 """Transparent JSON:API layer for Django Ninja.
 
-Provides :class:`JsonApiNinja`, a drop-in :class:`~ninja.NinjaAPI` subclass
+Provides :class:`NinjaJsonAPI`, a drop-in :class:`~ninja.NinjaAPI` subclass
 that automatically wraps responses in JSON:API document format and unwraps
 incoming JSON:API bodies, so that view functions look exactly like plain
 Django Ninja views.
 
 Example::
 
-    from django_ninja_jsonapi import JsonApiNinja
+    from django_ninja_jsonapi import NinjaJsonAPI
 
-    api = JsonApiNinja()
+    api = NinjaJsonAPI()
 
     @api.get("/articles", response=list[ArticleSchema])
     def list_articles(request):
@@ -61,7 +61,7 @@ def get_rel_id(request: HttpRequest, name: str) -> str | None:
     """Get the ID of a to-one relationship from the unwrapped JSON:API body.
 
     Relationship data is stashed on the request during transparent body
-    unwrapping performed by :class:`JsonApiNinja`.
+    unwrapping performed by :class:`NinjaJsonAPI`.
 
     Args:
         request: The Django request object.
@@ -343,7 +343,7 @@ def _extract_request(*, args: tuple[Any, ...], kwargs: dict[str, Any]) -> HttpRe
     for arg in args:
         if isinstance(arg, HttpRequest):
             return arg
-    msg = "JsonApiNinja could not locate request argument"
+    msg = "NinjaJsonAPI could not locate request argument"
     raise ValueError(msg)
 
 
@@ -432,11 +432,11 @@ class JsonApiRouter(Router):
 
 
 # ---------------------------------------------------------------------------
-# JsonApiNinja — NinjaAPI subclass
+# NinjaJsonAPI — NinjaAPI subclass
 # ---------------------------------------------------------------------------
 
 
-class JsonApiNinja(NinjaAPI):
+class NinjaJsonAPI(NinjaAPI):
     """A :class:`~ninja.NinjaAPI` that speaks JSON:API transparently.
 
     Drop-in replacement for :class:`NinjaAPI` that automatically:
@@ -448,9 +448,9 @@ class JsonApiNinja(NinjaAPI):
 
     Usage::
 
-        from django_ninja_jsonapi import JsonApiNinja
+        from django_ninja_jsonapi import NinjaJsonAPI
 
-        api = JsonApiNinja()
+        api = NinjaJsonAPI()
 
         @api.get("/articles", response=list[ArticleSchema])
         def list_articles(request):

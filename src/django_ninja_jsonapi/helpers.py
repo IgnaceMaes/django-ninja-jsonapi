@@ -21,7 +21,7 @@ def apply_attributes(
     instance via ``setattr``, and optionally saves the instance.
 
     Supports both legacy ``jsonapi_body()`` wrappers (``body.data.attributes``)
-    and plain Pydantic schemas (as used with :class:`JsonApiNinja`).
+    and plain Pydantic schemas (as used with :class:`NinjaJsonAPI`).
 
     Args:
         instance: A Django model instance to update.

@@ -1,13 +1,13 @@
 # Transparent JSON:API
 
-`JsonApiNinja` is a drop-in `NinjaAPI` subclass that makes JSON:API formatting invisible. Your view functions look exactly like plain Django Ninja views — the library handles wrapping responses and unwrapping request bodies automatically.
+`NinjaJsonAPI` is a drop-in `NinjaAPI` subclass that makes JSON:API formatting invisible. Your view functions look exactly like plain Django Ninja views — the library handles wrapping responses and unwrapping request bodies automatically.
 
 ## Quick example
 
 ```python
-from django_ninja_jsonapi import JsonApiNinja
+from django_ninja_jsonapi import NinjaJsonAPI
 
-api = JsonApiNinja()
+api = NinjaJsonAPI()
 
 @api.post("/articles", response={201: ArticleSchema})
 def create_article(request, body: ArticleCreateSchema):
@@ -19,18 +19,18 @@ Plain Pydantic schemas in, JSON:API documents out. No decorators, no body wrappe
 
 ## Setup
 
-Replace `NinjaAPI` with `JsonApiNinja`:
+Replace `NinjaAPI` with `NinjaJsonAPI`:
 
 ```python
-from django_ninja_jsonapi import JsonApiNinja
+from django_ninja_jsonapi import NinjaJsonAPI
 
-api = JsonApiNinja(
+api = NinjaJsonAPI(
     urls_namespace="my-api",
     # all standard NinjaAPI kwargs work: auth, title, version, etc.
 )
 ```
 
-`JsonApiNinja` automatically:
+`NinjaJsonAPI` automatically:
 
 - Sets the `JSONAPIRenderer`
 - Registers JSON:API exception handlers for `HTTPException` and `ObjectDoesNotExist`
@@ -257,7 +257,7 @@ from typing import ClassVar
 from pydantic import BaseModel, ConfigDict
 from django_ninja_jsonapi import (
     JsonApiMeta,
-    JsonApiNinja,
+    NinjaJsonAPI,
     apply_attributes,
     get_rel_id,
     jsonapi_filter,
@@ -292,7 +292,7 @@ class IntakeConfigUpdateSchema(BaseModel):
     name: str | None = None
 
 
-api = JsonApiNinja(urls_namespace="intake-jsonapi")
+api = NinjaJsonAPI(urls_namespace="intake-jsonapi")
 
 
 @api.get("/intake-configs/", response=list[IntakeConfigSchema])

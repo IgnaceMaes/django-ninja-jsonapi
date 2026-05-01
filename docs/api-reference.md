@@ -4,7 +4,7 @@
 
 ```python
 from django_ninja_jsonapi import (
-    JsonApiNinja,
+    NinjaJsonAPI,
     JsonApiMeta,
     JSONAPIRenderer,
     QueryStringManager,
@@ -26,16 +26,16 @@ from django_ninja_jsonapi import (
 )
 ```
 
-## `JsonApiNinja`
+## `NinjaJsonAPI`
 
-Location: `django_ninja_jsonapi.transparent.JsonApiNinja`
+Location: `django_ninja_jsonapi.transparent.NinjaJsonAPI`
 
 A `NinjaAPI` subclass that automatically wraps responses in JSON:API document format and unwraps JSON:API request bodies into plain Pydantic schemas.
 
 ### Constructor
 
 ```python
-JsonApiNinja(**kwargs)
+NinjaJsonAPI(**kwargs)
 ```
 
 Accepts all `NinjaAPI` keyword arguments. Automatically sets the renderer to `JSONAPIRenderer` and registers the JSON:API exception handler.
@@ -51,7 +51,7 @@ Accepts all `NinjaAPI` keyword arguments. Automatically sets the renderer to `JS
 
 Location: `django_ninja_jsonapi.transparent.JsonApiRouter`
 
-A Django Ninja `Router` subclass with the same transparent wrapping/unwrapping behavior as `JsonApiNinja`. Use for modular route organization.
+A Django Ninja `Router` subclass with the same transparent wrapping/unwrapping behavior as `NinjaJsonAPI`. Use for modular route organization.
 
 ```python
 from django_ninja_jsonapi.transparent import JsonApiRouter
@@ -150,7 +150,7 @@ A `dict` of the attributes that were applied.
 
 Location: `django_ninja_jsonapi.renderers.JSONAPIRenderer`
 
-Django Ninja renderer that produces `application/vnd.api+json` responses. Used automatically by `JsonApiNinja`.
+Django Ninja renderer that produces `application/vnd.api+json` responses. Used automatically by `NinjaJsonAPI`.
 
 ## `QueryStringManager`
 

@@ -1,7 +1,7 @@
 """Schema-level JSON:API resource configuration.
 
 Attach a ``JsonApiMeta`` instance to any Pydantic schema to declare its
-JSON:API resource type, id field, and other options.  ``JsonApiNinja`` reads
+JSON:API resource type, id field, and other options.  ``NinjaJsonAPI`` reads
 this metadata to automatically wrap responses and unwrap request bodies.
 
 Example::

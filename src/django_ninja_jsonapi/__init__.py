@@ -23,7 +23,7 @@ __all__ = [
     "HTTPException",
     "JSONAPIRenderer",
     "JsonApiMeta",
-    "JsonApiNinja",
+    "NinjaJsonAPI",
     "NotFound",
     "QueryStringManager",
     "apply_attributes",
@@ -73,10 +73,10 @@ def __getattr__(name: str) -> Any:
 
         return JsonApiMeta
 
-    if name == "JsonApiNinja":
-        from django_ninja_jsonapi.transparent import JsonApiNinja
+    if name == "NinjaJsonAPI":
+        from django_ninja_jsonapi.transparent import NinjaJsonAPI
 
-        return JsonApiNinja
+        return NinjaJsonAPI
 
     if name == "get_rel_id":
         from django_ninja_jsonapi.transparent import get_rel_id

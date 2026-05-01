@@ -107,7 +107,7 @@ ArticleSchema = model_schema(
 ## Full example
 
 ```python
-from django_ninja_jsonapi import JsonApiNinja, model_schema, apply_attributes, jsonapi_paginate
+from django_ninja_jsonapi import NinjaJsonAPI, model_schema, apply_attributes, jsonapi_paginate
 
 # Schemas
 ArticleSchema = model_schema(Article, fields=["uuid", "title", "body", "status", "created_dt"])
@@ -115,7 +115,7 @@ ArticleCreateSchema = model_schema(Article, fields=["title", "body"], name="Arti
 ArticleUpdateSchema = model_schema(Article, fields=["title", "body", "status"], all_optional=True, name="ArticleUpdateSchema")
 
 # API
-api = JsonApiNinja()
+api = NinjaJsonAPI()
 
 @api.get("/articles", response=list[ArticleSchema])
 def list_articles(request):

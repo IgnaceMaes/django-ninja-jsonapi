@@ -1,4 +1,4 @@
-"""Tests for JsonApiNinja transparent JSON:API layer."""
+"""Tests for NinjaJsonAPI transparent JSON:API layer."""
 
 import json
 from typing import ClassVar
@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict
 
 from django_ninja_jsonapi.meta import JsonApiMeta
 from django_ninja_jsonapi.transparent import (
-    JsonApiNinja,
+    NinjaJsonAPI,
     JsonApiRouter,
     get_rel_id,
     get_rel_ids,
@@ -104,13 +104,13 @@ class TestGetRelIds:
 
 
 # ---------------------------------------------------------------------------
-# JsonApiNinja — integration tests
+# NinjaJsonAPI — integration tests
 # ---------------------------------------------------------------------------
 
 
-class TestJsonApiNinjaGet:
+class TestNinjaJsonAPIGet:
     def test_get_detail_returns_jsonapi_document(self):
-        api = JsonApiNinja(urls_namespace="test-get-detail")
+        api = NinjaJsonAPI(urls_namespace="test-get-detail")
 
         @api.get("/items/{item_id}", response=SimpleSchema)
         def get_item(request, item_id: int):
@@ -127,7 +127,7 @@ class TestJsonApiNinjaGet:
         assert data["data"]["attributes"]["name"] == "Test Item"
 
     def test_get_list_returns_jsonapi_collection(self):
-        api = JsonApiNinja(urls_namespace="test-get-list")
+        api = NinjaJsonAPI(urls_namespace="test-get-list")
 
         @api.get("/items", response=list[SimpleSchema])
         def list_items(request):
@@ -144,7 +144,7 @@ class TestJsonApiNinjaGet:
         assert data["data"][1]["attributes"]["name"] == "Two"
 
     def test_get_with_relationships(self):
-        api = JsonApiNinja(urls_namespace="test-get-rels")
+        api = NinjaJsonAPI(urls_namespace="test-get-rels")
 
         @api.get("/articles/{id}", response=ArticleSchema)
         def get_article(request, id: int):
@@ -168,9 +168,9 @@ class TestJsonApiNinjaGet:
         assert data["data"]["relationships"]["tags"]["data"][0]["type"] == "tags"
 
 
-class TestJsonApiNinjaPost:
+class TestNinjaJsonAPIPost:
     def test_post_unwraps_body(self):
-        api = JsonApiNinja(urls_namespace="test-post-unwrap")
+        api = NinjaJsonAPI(urls_namespace="test-post-unwrap")
 
         captured = {}
 
@@ -199,7 +199,7 @@ class TestJsonApiNinjaPost:
         assert data["data"]["type"] == "simples"
 
     def test_post_with_relationships_stashed_on_request(self):
-        api = JsonApiNinja(urls_namespace="test-post-rels")
+        api = NinjaJsonAPI(urls_namespace="test-post-rels")
 
         captured = {}
 
@@ -239,9 +239,9 @@ class TestJsonApiNinjaPost:
         assert captured["author_id"] == "42"
 
 
-class TestJsonApiNinjaPatch:
+class TestNinjaJsonAPIPatch:
     def test_patch_unwraps_body(self):
-        api = JsonApiNinja(urls_namespace="test-patch")
+        api = NinjaJsonAPI(urls_namespace="test-patch")
 
         captured = {}
 
@@ -266,9 +266,9 @@ class TestJsonApiNinjaPatch:
         assert captured["name"] == "Updated"
 
 
-class TestJsonApiNinjaDelete:
+class TestNinjaJsonAPIDelete:
     def test_delete_returns_204(self):
-        api = JsonApiNinja(urls_namespace="test-delete")
+        api = NinjaJsonAPI(urls_namespace="test-delete")
 
         @api.delete("/items/{item_id}", response={204: None})
         def delete_item(request, item_id: int):
@@ -280,9 +280,9 @@ class TestJsonApiNinjaDelete:
         assert response.status_code == 204
 
 
-class TestJsonApiNinjaStatusCodeResponse:
+class TestNinjaJsonAPIStatusCodeResponse:
     def test_dict_response_with_status_codes(self):
-        api = JsonApiNinja(urls_namespace="test-status-codes")
+        api = NinjaJsonAPI(urls_namespace="test-status-codes")
 
         @api.post("/items", response={201: SimpleSchema, 200: SimpleSchema})
         def create_or_return(request, body: SimpleCreateSchema):
@@ -304,9 +304,9 @@ class TestJsonApiNinjaStatusCodeResponse:
         assert response.json()["data"]["type"] == "simples"
 
 
-class TestJsonApiNinjaExceptionHandling:
+class TestNinjaJsonAPIExceptionHandling:
     def test_http_exception_returns_jsonapi_error(self):
-        api = JsonApiNinja(urls_namespace="test-exc")
+        api = NinjaJsonAPI(urls_namespace="test-exc")
         from django_ninja_jsonapi.exceptions import BadRequest
 
         @api.get("/fail")
@@ -321,7 +321,7 @@ class TestJsonApiNinjaExceptionHandling:
         assert "errors" in data
 
     def test_object_does_not_exist_returns_404(self):
-        api = JsonApiNinja(urls_namespace="test-404")
+        api = NinjaJsonAPI(urls_namespace="test-404")
         from django.core.exceptions import ObjectDoesNotExist
 
         @api.get("/missing")
@@ -336,11 +336,11 @@ class TestJsonApiNinjaExceptionHandling:
         assert "errors" in data
 
 
-class TestJsonApiNinjaPagination:
+class TestNinjaJsonAPIPagination:
     def test_pagination_links_in_response(self):
         from django_ninja_jsonapi.response_helpers import jsonapi_paginate
 
-        api = JsonApiNinja(urls_namespace="test-pagination")
+        api = NinjaJsonAPI(urls_namespace="test-pagination")
 
         @api.get("/items", response=list[SimpleSchema])
         def list_items(request):
@@ -357,11 +357,11 @@ class TestJsonApiNinjaPagination:
         assert data["meta"]["count"] == 50
 
 
-class TestJsonApiNinjaNoMeta:
+class TestNinjaJsonAPINoMeta:
     """Test that schemas without explicit jsonapi_meta are passed through."""
 
     def test_schema_without_meta_not_transformed(self):
-        api = JsonApiNinja(urls_namespace="test-no-meta")
+        api = NinjaJsonAPI(urls_namespace="test-no-meta")
 
         class PlainSchema(BaseModel):
             id: int
