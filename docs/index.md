@@ -22,16 +22,22 @@
 
 - [Getting started](getting-started.md)
 - [Installation](installation.md)
+- [Quickstart](quickstart.md)
 - [Transparent JSON:API](transparent_jsonapi.md)
 
 ### Usage
 
 - [Usage overview](usage.md)
 - [Configuration](configuration.md)
+- [Logical data abstraction](logical_data_abstraction.md)
+- [Model schema](model_schema.md)
+- [Include related objects](include_related_objects.md)
+- [Include many-to-many](include_many_to_many.md)
 - [Filtering](filtering.md)
 - [Sorting](sorting.md)
+- [Sparse fieldsets](sparse_fieldsets.md)
 - [Pagination](pagination.md)
-- [Content Negotiation](content_negotiation.md)
+- [Content negotiation](content_negotiation.md)
 - [Inflection](inflection.md)
 - [Errors](errors.md)
 

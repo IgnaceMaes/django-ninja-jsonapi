@@ -6,6 +6,7 @@ This section groups day-to-day JSON:API features and behaviors.
 
 - [Configuration](configuration.md)
 - [Logical data abstraction](logical_data_abstraction.md)
+- [Model schema](model_schema.md)
 
 ## Includes
 
@@ -23,9 +24,7 @@ This section groups day-to-day JSON:API features and behaviors.
 ## Behavior and security
 
 - [Client-generated ID](client_generated_id.md)
+- [Content negotiation](content_negotiation.md)
+- [Inflection](inflection.md)
 - [Errors](errors.md)
 - [OAuth](oauth.md)
-
-## Helpers and utilities
-
-- [Model schema factory](model_schema.md)
