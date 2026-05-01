@@ -25,12 +25,12 @@ from __future__ import annotations
 import inspect
 import typing
 from functools import wraps
-from typing import Any, Callable, Optional, Sequence, Type, Union
+from typing import Any, Callable, Type
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpRequest
 from ninja import NinjaAPI, Router
-from ninja.constants import NOT_SET, NOT_SET_TYPE
+from ninja.constants import NOT_SET
 from pydantic import BaseModel
 
 from django_ninja_jsonapi.exceptions import HTTPException
@@ -41,7 +41,6 @@ from django_ninja_jsonapi.renderers import (
     JSONAPIRelationshipConfig,
     JSONAPIRenderer,
     JSONAPIResourceConfig,
-    normalize_relationships,
 )
 from django_ninja_jsonapi.schema_factory import JsonApiBody, jsonapi_body, jsonapi_response
 
@@ -120,7 +119,11 @@ def _has_jsonapi_meta(annotation: Any) -> bool:
 def _is_plain_pydantic(annotation: Any) -> bool:
     """Return True if *annotation* is a plain BaseModel (not JsonApiBody)."""
     try:
-        return isinstance(annotation, type) and issubclass(annotation, BaseModel) and not issubclass(annotation, JsonApiBody)
+        return (
+            isinstance(annotation, type)
+            and issubclass(annotation, BaseModel)
+            and not issubclass(annotation, JsonApiBody)
+        )
     except TypeError:
         return False
 
@@ -220,10 +223,9 @@ def _wrap_single_schema(
     meta = get_jsonapi_meta(schema)
     if meta is None:
         # No explicit jsonapi_meta — not a JSON:API schema, pass through
-        return (list[schema] if many else schema, None)
+        return (list[schema] if many else schema, None)  # type: ignore[valid-type]
 
     resource_type = meta.resolve_resource_type(schema)
-    id_field = meta.resolve_id_field(schema)
     relationships = detect_relationships(schema)
     rels = {
         name: {"resource_type": rc.resource_type, "many": rc.many, "id_field": rc.id_field}
@@ -282,7 +284,7 @@ def _wrap_view(
             _unwrap_body_params(request, kwargs, body_params)
             return await func(*args, **kwargs)
 
-        async_wrapper.__signature__ = new_sig
+        async_wrapper.__signature__ = new_sig  # type: ignore[attr-defined]
         return async_wrapper
 
     @wraps(func)
@@ -293,7 +295,7 @@ def _wrap_view(
         _unwrap_body_params(request, kwargs, body_params)
         return func(*args, **kwargs)
 
-    sync_wrapper.__signature__ = new_sig
+    sync_wrapper.__signature__ = new_sig  # type: ignore[attr-defined]
     return sync_wrapper
 
 

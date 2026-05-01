@@ -2,8 +2,7 @@
 
 from typing import ClassVar
 
-import pytest
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from django_ninja_jsonapi.meta import (
     JsonApiMeta,
@@ -13,8 +12,6 @@ from django_ninja_jsonapi.meta import (
     get_jsonapi_meta,
     get_or_default_meta,
 )
-from django_ninja_jsonapi.renderers import JSONAPIRelationshipConfig
-
 
 # ---------------------------------------------------------------------------
 # Helpers

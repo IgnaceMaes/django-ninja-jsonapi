@@ -1,9 +1,7 @@
 """Tests for NinjaJsonAPI transparent JSON:API layer."""
 
-import json
 from typing import ClassVar
 
-import pytest
 from django.test import RequestFactory
 from ninja.testing import TestClient
 from pydantic import BaseModel, ConfigDict
@@ -11,11 +9,9 @@ from pydantic import BaseModel, ConfigDict
 from django_ninja_jsonapi.meta import JsonApiMeta
 from django_ninja_jsonapi.transparent import (
     NinjaJsonAPI,
-    JsonApiRouter,
     get_rel_id,
     get_rel_ids,
 )
-
 
 # ---------------------------------------------------------------------------
 # Test schemas
