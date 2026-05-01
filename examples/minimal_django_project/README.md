@@ -5,8 +5,8 @@ This example mirrors the upstream examples style with a small runnable API proje
 ## What it includes
 
 - Django project config (`project/`)
-- Example app (`jsonapi_app/`) with models, schemas, and views
-- `django-ninja-jsonapi` `ApplicationBuilder` route registration
+- Example app (`jsonapi_app/`) with models, schemas, and API endpoints
+- Transparent JSON:API wrapping via `NinjaJsonAPI`
 
 ## Run locally
 
@@ -40,11 +40,11 @@ Create customer:
 
 ```http
 POST /api/customers
-Content-Type: application/json
+Content-Type: application/vnd.api+json
 
 {
   "data": {
-    "type": "customer",
+    "type": "customers",
     "attributes": {
       "name": "John",
       "email": "john@example.com"
@@ -57,11 +57,11 @@ Create computer:
 
 ```http
 POST /api/computers
-Content-Type: application/json
+Content-Type: application/vnd.api+json
 
 {
   "data": {
-    "type": "computer",
+    "type": "computers",
     "attributes": {
       "serial": "ABC-123"
     }

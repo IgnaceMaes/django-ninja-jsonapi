@@ -1,60 +1,60 @@
 from ninja import NinjaAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from django_ninja_jsonapi import (
-    jsonapi_include,
-    jsonapi_meta,
-    jsonapi_paginate,
-    jsonapi_resource,
-    jsonapi_response,
-    setup_jsonapi,
+from django_ninja_jsonapi import JSONAPIRenderer, jsonapi_include, jsonapi_meta, jsonapi_paginate
+from django_ninja_jsonapi.renderers import (
+    REQUEST_JSONAPI_CONFIG_ATTR,
+    JSONAPIRelationshipConfig,
+    JSONAPIResourceConfig,
 )
+from django_ninja_jsonapi.schema_factory import jsonapi_response
 
 from .models import Customer
 
 
 class CustomerStandaloneSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     email: str
 
 
 CUSTOMER_RELATIONSHIPS = {
-    "computers": {"resource_type": "computer", "many": True},
+    "computers": JSONAPIRelationshipConfig(resource_type="computers", many=True),
 }
 
 api = NinjaAPI(
     title="django-ninja-jsonapi standalone renderer example",
     urls_namespace="api-standalone",
+    renderer=JSONAPIRenderer(),
 )
-setup_jsonapi(api)
 
 
 @api.get(
     "/customers",
-    response=jsonapi_response(CustomerStandaloneSchema, "customer", many=True),
+    response=jsonapi_response(CustomerStandaloneSchema, "customers", many=True),
     tags=["standalone-customers"],
 )
-@jsonapi_resource("customer")
 def list_customers(request):
+    setattr(request, REQUEST_JSONAPI_CONFIG_ATTR, JSONAPIResourceConfig(resource_type="customers"))
     return jsonapi_paginate(request, Customer.objects.order_by("id"))
 
 
 @api.get(
     "/customers/{customer_id}",
-    response=jsonapi_response(CustomerStandaloneSchema, "customer", relationships=CUSTOMER_RELATIONSHIPS),
+    response=jsonapi_response(CustomerStandaloneSchema, "customers", relationships=CUSTOMER_RELATIONSHIPS),
     tags=["standalone-customers"],
 )
-@jsonapi_resource("customer", relationships=CUSTOMER_RELATIONSHIPS)
 def get_customer(request, customer_id: int):
+    setattr(
+        request,
+        REQUEST_JSONAPI_CONFIG_ATTR,
+        JSONAPIResourceConfig(resource_type="customers", relationships=CUSTOMER_RELATIONSHIPS),
+    )
     customer = Customer.objects.get(id=customer_id)
     computers = [{"id": computer.id, "serial": computer.serial} for computer in customer.computers.order_by("id")]
-    jsonapi_include(request, computers, resource_type="computer")
+    jsonapi_include(request, computers, resource_type="computers")
     jsonapi_meta(request, included_count=len(computers))
 
-    return {
-        "id": customer.id,
-        "name": customer.name,
-        "email": customer.email,
-        "computers": [{"id": computer["id"]} for computer in computers],
-    }
+    return customer
