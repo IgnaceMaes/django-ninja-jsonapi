@@ -1,6 +1,5 @@
 """Tests for get_rel_id / get_rel_ids helpers on jsonapi_body models."""
 
-import pytest
 from pydantic import BaseModel
 
 from django_ninja_jsonapi.schema_factory import JsonApiBody, JsonApiDataIn, jsonapi_body

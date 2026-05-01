@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 from django_ninja_jsonapi.renderers import JSONAPIRelationshipConfig, normalize_relationships
 
 _RESPONSE_CACHE: dict[str, Type[BaseModel]] = {}
-_BODY_CACHE: dict[str, Type[BaseModel]] = {}
+_BODY_CACHE: dict[str, type] = {}
 
 # ---------------------------------------------------------------------------
 # Generic base classes for type-checker / IDE support
@@ -38,7 +38,7 @@ class JsonApiDataIn(BaseModel, Generic[TAttributes]):
     """
 
     type: str = ""
-    attributes: TAttributes  # type: ignore[assignment]
+    attributes: TAttributes
 
     def get_rel_id(self, name: str) -> str | None:
         """Get the ID of a to-one relationship by name, or ``None``."""
@@ -453,7 +453,7 @@ def jsonapi_body(
     rels = normalize_relationships(relationships)
     key = _cache_key(schema, resource_type, relationships=rels, suffix=f"body:allow_id={allow_id}")
     if key in _BODY_CACHE:
-        return _BODY_CACHE[key]
+        return _BODY_CACHE[key]  # ty: ignore[invalid-return-type]
 
     schema_name = schema.__name__.removesuffix("Schema")
 

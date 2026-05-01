@@ -1,14 +1,11 @@
 """Tests for model_schema() factory."""
 
-import datetime
 import uuid
-from typing import Any, Optional
 
 import pytest
 from django.db import models
 
 from django_ninja_jsonapi.model_schema import model_schema
-
 
 # ---------------------------------------------------------------------------
 # Test Django models
@@ -36,7 +33,7 @@ class Article(models.Model):
     @property
     def organization_name(self) -> str:
         if self.organization:
-            return self.organization.name
+            return self.organization.name  # ty: ignore[invalid-return-type]
         return ""
 
     class Meta:
@@ -160,8 +157,8 @@ class TestModelSchemaValidation:
     def test_validates_dict_data(self):
         schema = model_schema(Article, fields=["title", "body"])
         instance = schema.model_validate({"title": "Hello", "body": "World"})
-        assert instance.title == "Hello"
-        assert instance.body == "World"
+        assert instance.title == "Hello"  # ty: ignore[unresolved-attribute]
+        assert instance.body == "World"  # ty: ignore[unresolved-attribute]
 
     def test_validates_from_attributes(self):
         schema = model_schema(Article, fields=["title", "body"])
@@ -171,5 +168,5 @@ class TestModelSchemaValidation:
             body = "World"
 
         instance = schema.model_validate(FakeObj(), from_attributes=True)
-        assert instance.title == "Hello"
-        assert instance.body == "World"
+        assert instance.title == "Hello"  # ty: ignore[unresolved-attribute]
+        assert instance.body == "World"  # ty: ignore[unresolved-attribute]

@@ -1,8 +1,7 @@
 """Tests for apply_attributes helper."""
 
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
-import pytest
 from pydantic import BaseModel
 
 from django_ninja_jsonapi.helpers import apply_attributes

@@ -29,7 +29,7 @@ import uuid
 from decimal import Decimal
 from typing import Any, Optional, Type
 
-from pydantic import BaseModel, ConfigDict, Field, create_model
+from pydantic import BaseModel, ConfigDict, create_model
 
 # Mapping from Django field types to Python types
 _DJANGO_FIELD_TYPE_MAP: dict[str, type] = {
@@ -94,7 +94,7 @@ def _has_default(django_field: Any) -> bool:
 
 
 def model_schema(
-    model: type,
+    model: Any,
     *,
     fields: list[str] | None = None,
     exclude: set[str] | None = None,
@@ -164,15 +164,10 @@ def model_schema(
             nullable = _is_field_nullable(django_field)
             has_def = _has_default(django_field)
 
-            is_optional = (
-                all_optional
-                or (optional_fields and field_name in optional_fields)
-                or nullable
-                or has_def
-            )
+            is_optional = all_optional or (optional_fields and field_name in optional_fields) or nullable or has_def
 
             if is_optional:
-                pydantic_fields[field_name] = (Optional[python_type], None)
+                pydantic_fields[field_name] = (Optional[python_type], None)  # ty: ignore[invalid-type-form]
             else:
                 pydantic_fields[field_name] = (python_type, ...)
         else:
@@ -198,7 +193,7 @@ def model_schema(
     if extra_fields:
         pydantic_fields.update(extra_fields)
 
-    schema = create_model(
+    schema = create_model(  # ty: ignore[no-matching-overload]
         model_name,
         __config__=ConfigDict(from_attributes=True),
         **pydantic_fields,

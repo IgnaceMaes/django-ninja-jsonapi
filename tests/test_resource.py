@@ -4,7 +4,7 @@ import pytest
 from pydantic import BaseModel
 
 from django_ninja_jsonapi.resource import JsonApiResource
-from django_ninja_jsonapi.schema_factory import JsonApiBody, JsonApiDataIn, jsonapi_body, jsonapi_response
+from django_ninja_jsonapi.schema_factory import JsonApiBody
 
 
 class ArticleSchema(BaseModel):
@@ -25,7 +25,7 @@ class ArticleUpdateSchema(BaseModel):
 
 
 class TestJsonApiResource:
-    def _make_resource(self, **kwargs):
+    def _make_resource(self, **kwargs) -> JsonApiResource:
         defaults = {
             "resource_type": "articles",
             "id_field": "uuid",
@@ -37,7 +37,7 @@ class TestJsonApiResource:
             },
         }
         defaults.update(kwargs)
-        return JsonApiResource(**defaults)
+        return JsonApiResource(**defaults)  # ty: ignore[invalid-argument-type]
 
     # ----- response() -----
 
@@ -73,7 +73,7 @@ class TestJsonApiResource:
                 }
             }
         )
-        assert parsed.data.attributes.title == "Hello"
+        assert parsed.data.attributes.title == "Hello"  # ty: ignore[unresolved-attribute]
 
     def test_body_update(self):
         resource = self._make_resource()
@@ -89,7 +89,7 @@ class TestJsonApiResource:
                 }
             }
         )
-        assert parsed.data.attributes.title == "Updated"
+        assert parsed.data.attributes.title == "Updated"  # ty: ignore[unresolved-attribute]
 
     def test_body_with_allow_id(self):
         resource = self._make_resource()
