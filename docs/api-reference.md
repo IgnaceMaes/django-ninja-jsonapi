@@ -6,6 +6,7 @@
 from django_ninja_jsonapi import (
     NinjaJsonAPI,
     JsonApiMeta,
+    ModelSchema,
     JSONAPIRenderer,
     QueryStringManager,
     HTTPException,
@@ -144,6 +145,55 @@ Apply attributes from a request body to a Django model instance.
 ### Returns
 
 A `dict` of the attributes that were applied.
+
+## `model_schema(model, ...)`
+
+Location: `django_ninja_jsonapi._model_schema.model_schema`
+
+Generate a Pydantic schema from a Django model, with optional JSON:API metadata.
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `model` | Django Model | required | The Django model class |
+| `fields` | `list[str]` | `None` | Field names to include. Supports DB fields and `@property` names. |
+| `exclude` | `set[str]` | `None` | Field names to exclude |
+| `id_field` | `str` | `None` | Name of the field used as the JSON:API `id` |
+| `optional_fields` | `set[str]` | `None` | Fields to mark as `Optional` |
+| `all_optional` | `bool` | `False` | Make all fields `Optional` (for PATCH) |
+| `name` | `str` | `None` | Custom schema name (default: `{Model}Schema`) |
+| `extra_fields` | `dict` | `None` | Additional Pydantic field definitions |
+| `resource_type` | `str` | `None` | JSON:API resource type. When set, attaches `JsonApiMeta` to the schema. |
+
+### Example
+
+```python
+from django_ninja_jsonapi import model_schema
+
+CustomerSchema = model_schema(Customer, fields=["id", "name", "email"], resource_type="customers")
+CustomerUpdateSchema = model_schema(Customer, fields=["name", "email"], all_optional=True, name="CustomerUpdateSchema")
+```
+
+See [Model schema factory](model_schema.md) for full documentation.
+
+## `ModelSchema`
+
+Location: `django_ninja_jsonapi._model_schema.ModelSchema`
+
+Declarative base class for generating schemas from Django models. Define a `Meta` inner class instead of listing fields manually.
+
+```python
+from django_ninja_jsonapi import ModelSchema
+
+class CustomerSchema(ModelSchema):
+    class Meta:
+        model = Customer
+        fields = ["id", "name", "email"]
+        resource_type = "customers"
+```
+
+See [Model schema](model_schema.md) for `Meta` options and full documentation.
 
 ## `JSONAPIRenderer`
 

@@ -23,6 +23,7 @@ __all__ = [
     "HTTPException",
     "JSONAPIRenderer",
     "JsonApiMeta",
+    "ModelSchema",
     "NinjaJsonAPI",
     "NotFound",
     "QueryStringManager",
@@ -64,9 +65,14 @@ def __getattr__(name: str) -> Any:
         return apply_attributes
 
     if name == "model_schema":
-        from django_ninja_jsonapi.model_schema import model_schema
+        from django_ninja_jsonapi._model_schema import model_schema
 
         return model_schema
+
+    if name == "ModelSchema":
+        from django_ninja_jsonapi._model_schema import ModelSchema
+
+        return ModelSchema
 
     if name == "JsonApiMeta":
         from django_ninja_jsonapi.meta import JsonApiMeta

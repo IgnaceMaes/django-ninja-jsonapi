@@ -1,28 +1,22 @@
-from typing import ClassVar
+from pydantic import BaseModel
 
-from pydantic import BaseModel, ConfigDict
+from django_ninja_jsonapi import ModelSchema
 
-from django_ninja_jsonapi import JsonApiMeta
-
-
-class ComputerSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    serial: str
-
-    jsonapi_meta: ClassVar[JsonApiMeta] = JsonApiMeta(resource_type="computers")
+from .models import Computer, Customer
 
 
-class CustomerSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class CustomerSchema(ModelSchema):
+    class Meta:
+        model = Customer
+        fields = ["id", "name", "email"]
+        resource_type = "customers"
 
-    id: int
-    name: str
-    email: str
-    computers: list[ComputerSchema] = []
 
-    jsonapi_meta: ClassVar[JsonApiMeta] = JsonApiMeta(resource_type="customers")
+class ComputerSchema(ModelSchema):
+    class Meta:
+        model = Computer
+        fields = ["id", "serial"]
+        resource_type = "computers"
 
 
 class CustomerSchemaIn(BaseModel):

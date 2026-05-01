@@ -2,19 +2,22 @@
 
 Provides ``model_schema()`` to automatically generate Pydantic ``BaseModel``
 subclasses from Django model definitions, including support for
-``@property`` fields, ``all_optional`` (PATCH semantics), and
-``from_attributes`` configuration.
+``@property`` fields, ``all_optional`` (PATCH semantics),
+``from_attributes`` configuration, and automatic ``JsonApiMeta`` attachment.
 
 Example::
 
     from django_ninja_jsonapi import model_schema
 
+    # Auto-infers resource_type="intake-configs", id_field="uuid"
     IntakeConfigSchema = model_schema(
         IntakeConfig,
         fields=["uuid", "name", "is_active", "organization_name", "created_dt"],
         id_field="uuid",
+        resource_type="intake-configs",
     )
 
+    # Update schema (no resource_type needed — inferred from response schema)
     IntakeConfigUpdateSchema = model_schema(
         IntakeConfig,
         fields=["name", "is_active"],
@@ -103,6 +106,7 @@ def model_schema(
     all_optional: bool = False,
     name: str | None = None,
     extra_fields: dict[str, tuple[type, Any]] | None = None,
+    resource_type: str | None = None,
 ) -> Type[BaseModel]:
     """Generate a Pydantic schema from a Django model.
 
@@ -123,6 +127,9 @@ def model_schema(
             ``{ModelName}Schema``.
         extra_fields: Additional Pydantic field definitions to include in
             the schema, as ``{name: (type, default_or_Field)}``.
+        resource_type: JSON:API resource type string (e.g. ``"articles"``).
+            When provided, a ``JsonApiMeta`` is attached as a ``ClassVar``
+            on the schema so it works with ``NinjaJsonAPI`` transparently.
 
     Returns:
         A Pydantic ``BaseModel`` subclass.
@@ -200,5 +207,11 @@ def model_schema(
         __config__=ConfigDict(from_attributes=True),
         **pydantic_fields,
     )
+
+    # Attach JsonApiMeta as a ClassVar when resource_type is provided
+    if resource_type is not None:
+        from django_ninja_jsonapi.meta import JsonApiMeta
+
+        schema.jsonapi_meta = JsonApiMeta(resource_type=resource_type, id_field=id_field)
 
     return schema

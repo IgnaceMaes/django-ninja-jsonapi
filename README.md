@@ -180,6 +180,7 @@ NINJA_JSONAPI = {
 from django_ninja_jsonapi import (
     NinjaJsonAPI,
     JsonApiMeta,
+    ModelSchema,
     JSONAPIRenderer,
     QueryStringManager,
     HTTPException,
