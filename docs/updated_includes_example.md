@@ -14,14 +14,14 @@ Content-Type: application/vnd.api+json
 
 {
 	"data": {
-		"type": "customer",
+		"type": "customers",
 		"id": "1",
 		"attributes": {
 			"name": "John Updated"
 		},
 		"relationships": {
 			"computers": {
-				"data": [{"type": "computer", "id": "10"}]
+				"data": [{"type": "computers", "id": "10"}]
 			}
 		}
 	}
@@ -33,12 +33,12 @@ import httpx
 
 payload = {
 	"data": {
-		"type": "customer",
+		"type": "customers",
 		"id": "1",
 		"attributes": {"name": "John Updated"},
 		"relationships": {
 			"computers": {
-				"data": [{"type": "computer", "id": "10"}],
+				"data": [{"type": "computers", "id": "10"}],
 			},
 		},
 	},
@@ -54,13 +54,13 @@ Example response excerpt:
 {
 	"links": {"self": "http://localhost:8000/api/customers/1?include=computers"},
 	"data": {
-		"type": "customer",
+		"type": "customers",
 		"id": "1",
 		"links": {"self": "http://localhost:8000/api/customers/1/"}
 	},
 	"included": [
 		{
-			"type": "computer",
+			"type": "computers",
 			"id": "10",
 			"attributes": {"serial": "ABC-123"},
 			"links": {"self": "http://localhost:8000/api/computers/10/"}

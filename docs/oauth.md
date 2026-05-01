@@ -7,7 +7,7 @@ Use Django authentication providers and Ninja auth hooks, then map authorization
 ## Example pattern
 
 ```python
-from ninja import NinjaAPI
+from django_ninja_jsonapi import NinjaJsonAPI
 from ninja.security import HttpBearer
 
 
@@ -18,7 +18,7 @@ class OAuthBearer(HttpBearer):
 		return {"token": token}
 
 
-api = NinjaAPI(auth=OAuthBearer())
+api = NinjaJsonAPI(auth=OAuthBearer())
 ```
 
 Future docs may include end-to-end examples with common Django OAuth providers.

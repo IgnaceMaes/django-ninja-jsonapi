@@ -26,6 +26,12 @@ dependencies = [
     "pydantic>=2.6.0",
 ]
 
+[project.urls]
+Homepage = "https://ignacemaes.com/django-ninja-jsonapi/"
+Documentation = "https://ignacemaes.com/django-ninja-jsonapi/"
+Repository = "https://github.com/ignacemaes/django-ninja-jsonapi"
+Changelog = "https://github.com/ignacemaes/django-ninja-jsonapi/blob/main/CHANGELOG.md"
+
 [build-system]
 requires = ["uv_build>=0.10.3,<0.11.0"]
 build-backend = "uv_build"

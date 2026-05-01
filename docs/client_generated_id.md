@@ -24,7 +24,7 @@ Content-Type: application/vnd.api+json
 
 {
 	"data": {
-		"type": "customer",
+		"type": "customers",
 		"id": "external-customer-123",
 		"attributes": {
 			"name": "John",

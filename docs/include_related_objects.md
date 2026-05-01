@@ -24,7 +24,7 @@ Example response shape:
 		"self": "http://localhost:8000/api/customers/1?include=computers"
 	},
 	"data": {
-		"type": "customer",
+		"type": "customers",
 		"id": "1",
 		"attributes": {"name": "John"},
 		"links": {
@@ -32,7 +32,7 @@ Example response shape:
 		},
 		"relationships": {
 			"computers": {
-				"data": [{"type": "computer", "id": "10"}],
+				"data": [{"type": "computers", "id": "10"}],
 				"links": {
 					"self": "http://localhost:8000/api/customers/1/relationships/computers/",
 					"related": "http://localhost:8000/api/customers/1/computers/"
@@ -42,7 +42,7 @@ Example response shape:
 	},
 	"included": [
 		{
-			"type": "computer",
+			"type": "computers",
 			"id": "10",
 			"attributes": {"serial": "ABC-123"},
 			"links": {
@@ -62,7 +62,7 @@ GET /customers/1?include=computers.owner
 ## Include with sparse fieldsets
 
 ```http
-GET /customers/1?include=computers&fields[customer]=name,computers&fields[computer]=serial
+GET /customers/1?include=computers&fields[customers]=name,computers&fields[computers]=serial
 ```
 
 ```python

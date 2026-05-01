@@ -16,6 +16,7 @@ from django_ninja_jsonapi import (
     get_rel_ids,
     model_schema,
     jsonapi_paginate,
+    jsonapi_pagination,
     jsonapi_cursor_pagination,
     jsonapi_include,
     jsonapi_links,
@@ -76,8 +77,7 @@ Schema-level configuration for JSON:API behavior. Attach as a `ClassVar` on Pyda
 ```python
 JsonApiMeta(
     resource_type: str | None = None,
-    id_field: str = "id",
-    relationships: dict[str, dict] | None = None,
+    id_field: str | None = None,
 )
 ```
 
@@ -86,8 +86,7 @@ JsonApiMeta(
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `resource_type` | `str \| None` | `None` | JSON:API type name. Auto-derived from class name if omitted (e.g. `ArticleSchema` → `"articles"`). |
-| `id_field` | `str` | `"id"` | Field used as the resource ID. |
-| `relationships` | `dict` | `None` | Explicit relationship definitions. Auto-detected from type hints if omitted. |
+| `id_field` | `str \| None` | `None` | Field used as the resource ID. Defaults to `"id"`, or `"uuid"` if the schema has a `uuid` field but no `id` field. |
 
 ### Example
 
@@ -164,9 +163,13 @@ Parses JSON:API query parameters (`filter`, `sort`, `include`, `fields`, `page`)
 
 Paginate a queryset and attach JSON:API pagination links/meta to the request.
 
-### `jsonapi_cursor_pagination(request, queryset, ...)`
+### `jsonapi_pagination(request, *, count, page_size, page_number)`
 
-Cursor-based pagination variant.
+Low-level pagination helper — sets pagination meta and links on the request without slicing. Use when you've already sliced the data yourself.
+
+### `jsonapi_cursor_pagination(request, *, page_size, next_cursor, prev_cursor)`
+
+Cursor-based pagination — sets cursor-style pagination links on the request.
 
 ### `jsonapi_include(request, included)`
 
