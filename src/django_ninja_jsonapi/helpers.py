@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
+from pydantic import BaseModel
+
 
 def apply_attributes(
     instance: Any,
@@ -18,10 +20,13 @@ def apply_attributes(
     Extracts ``exclude_unset=True`` attributes from the body, sets them on the
     instance via ``setattr``, and optionally saves the instance.
 
+    Supports both legacy ``jsonapi_body()`` wrappers (``body.data.attributes``)
+    and plain Pydantic schemas (as used with :class:`NinjaJsonAPI`).
+
     Args:
         instance: A Django model instance to update.
-        body: A ``jsonapi_body()`` parsed model.  Must have
-            ``body.data.attributes``.
+        body: A ``jsonapi_body()`` parsed model (with ``body.data.attributes``)
+            or a plain Pydantic ``BaseModel`` instance.
         save: If ``True`` (default), call ``instance.save()`` with
             ``update_fields`` limited to changed attributes plus
             *extra_update_fields*.
@@ -37,13 +42,16 @@ def apply_attributes(
         from django_ninja_jsonapi import apply_attributes
 
         @api.patch("/articles/{article_id}", ...)
-        @jsonapi_resource("articles")
-        def update_article(request, article_id: int, body: jsonapi_body(...)):
+        def update_article(request, article_id: int, body: ArticleUpdateSchema):
             article = Article.objects.get(id=article_id)
             apply_attributes(article, body, extra_update_fields=["updated_dt"])
             return article
     """
-    attrs = body.data.attributes.model_dump(exclude_unset=True)
+    # Support both legacy JsonApiBody wrappers and plain schemas
+    if isinstance(body, BaseModel) and not hasattr(body, "data"):
+        attrs = body.model_dump(exclude_unset=True)
+    else:
+        attrs = body.data.attributes.model_dump(exclude_unset=True)
 
     if exclude:
         attrs = {k: v for k, v in attrs.items() if k not in exclude}

@@ -4,7 +4,6 @@ import pytest
 from django.test import RequestFactory
 from pydantic import BaseModel
 
-from django_ninja_jsonapi.decorators import jsonapi_resource
 from django_ninja_jsonapi.renderers import (
     REQUEST_JSONAPI_CONFIG_ATTR,
     JSONAPIRelationshipConfig,
@@ -98,52 +97,6 @@ def test_renderer_skips_rewrapping_for_jsonapi_documents():
     result = _render_payload(request, payload)
 
     assert result == payload
-
-
-def test_jsonapi_resource_decorator_sets_request_metadata_for_sync_functions():
-    request = RequestFactory().get("/articles/1/")
-
-    @jsonapi_resource("articles")
-    def endpoint(request, article_id: int):
-        return {"id": article_id, "title": "Hello"}
-
-    _ = endpoint(request, 1)
-
-    config = getattr(request, REQUEST_JSONAPI_CONFIG_ATTR)
-    assert config.resource_type == "articles"
-    # Default: respects INCLUDE_JSONAPI_OBJECT setting (defaults to False)
-    assert config.include_jsonapi_object is False
-
-
-def test_jsonapi_resource_decorator_explicit_include_jsonapi_object():
-    request = RequestFactory().get("/articles/1/")
-
-    @jsonapi_resource("articles", include_jsonapi_object=True)
-    def endpoint(request, article_id: int):
-        return {"id": article_id, "title": "Hello"}
-
-    _ = endpoint(request, 1)
-
-    config = getattr(request, REQUEST_JSONAPI_CONFIG_ATTR)
-    assert config.include_jsonapi_object is True
-
-
-@pytest.mark.asyncio
-async def test_jsonapi_resource_decorator_sets_request_metadata_for_async_functions():
-    request = RequestFactory().get("/articles/1/")
-
-    @jsonapi_resource(
-        "articles",
-        relationships={"author": {"resource_type": "people", "many": False}},
-    )
-    async def endpoint(request, article_id: int):
-        return {"id": article_id, "title": "Hello", "author": {"id": 9}}
-
-    _ = await endpoint(request, 1)
-
-    config = getattr(request, REQUEST_JSONAPI_CONFIG_ATTR)
-    assert config.resource_type == "articles"
-    assert config.relationships["author"].resource_type == "people"
 
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 # Content Negotiation
 
-`django-ninja-jsonapi` enforces JSON:API content-type negotiation automatically on every `ApplicationBuilder` endpoint that receives a request body.
+`django-ninja-jsonapi` enforces JSON:API content-type negotiation on endpoints that receive a request body.
 
 ## Behaviour
 
@@ -36,11 +36,9 @@ Accept: application/vnd.api+json; version=1, text/html
 
 If the `Accept` header does not mention the JSON:API media type at all (or is absent), the request is allowed through — the server responds with the JSON:API media type regardless.
 
-## No configuration needed
+## Manual validation
 
-Content negotiation is enabled by default for all `ApplicationBuilder` endpoints.  There is no setting to disable it.
-
-If you use the standalone `@jsonapi_resource` decorator mode, you can call the validators manually:
+You can call the validators directly if needed:
 
 ```python
 from django_ninja_jsonapi.content_negotiation import validate_accept, validate_content_type

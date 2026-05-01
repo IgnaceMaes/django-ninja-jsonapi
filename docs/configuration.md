@@ -18,8 +18,7 @@ NINJA_JSONAPI = {
 ## Keys
 
 - `DEFAULT_PAGE_SIZE`: default number of items per page when the client
-  doesn't send `page[size]`.  Used by both `ApplicationBuilder` views and the
-  standalone `jsonapi_paginate()` helper.
+  doesn't send `page[size]`.
 - `MAX_PAGE_SIZE`: hard upper limit for `page[size]`.  Client-requested sizes
   above this value are clamped silently.
 - `MAX_INCLUDE_DEPTH`: maximum include chain depth (for example `a.b.c`).
@@ -27,8 +26,7 @@ NINJA_JSONAPI = {
     - When `True`, `page[size]=0` disables pagination.
     - When `False`, `page[size]=0` falls back to the default page size.
 - `INCLUDE_JSONAPI_OBJECT`: when `True`, adds top-level `jsonapi` object to
-  responses.  Applies to both `ApplicationBuilder` and standalone
-  `@jsonapi_resource` endpoints.
+  responses.
 - `JSONAPI_VERSION`: version string used when `INCLUDE_JSONAPI_OBJECT=True`.
 - `INFLECTION`: attribute-key transformation applied to JSON:API documents.
     - `None` (default) — keys match Python field names.
@@ -40,7 +38,6 @@ NINJA_JSONAPI = {
 
 - Keep `MAX_INCLUDE_DEPTH` conservative to avoid expensive graph traversal.
 - Set `MAX_PAGE_SIZE` based on endpoint cost and typical client use.
-- Use per-resource operation limits when read-heavy resources need stricter controls.
 
 ## Query parameters supported
 
@@ -57,30 +54,6 @@ NINJA_JSONAPI = {
 - Unknown query parameters are rejected with `400 Bad Request`.
 - Repeated parameters are rejected for non-`filter` keys (for example repeating `sort` or `page[size]`).
 - Repeating `filter[...]` keys is allowed.
-
-## Include-query optimization
-
-The Django ORM data layer now optimizes include paths automatically:
-
-- to-one include chains use `select_related`
-- to-many include chains use `prefetch_related`
-
-You can also provide explicit include optimization maps on your view:
-
-```python
-from django_ninja_jsonapi import ViewBaseGeneric
-
-
-class CustomerView(ViewBaseGeneric):
-    select_for_includes = {
-        "__all__": ["company"],
-        "owner": ["owner__profile"],
-    }
-    prefetch_for_includes = {
-        "owner": ["owner__groups"],
-    }
-    django_filterset_class = CustomerFilterSet
-```
 
 ## Resource meta fields
 

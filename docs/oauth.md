@@ -21,6 +21,4 @@ class OAuthBearer(HttpBearer):
 api = NinjaAPI(auth=OAuthBearer())
 ```
 
-Combine this with `OperationConfig` dependency checks in your views to enforce scope/resource-level authorization.
-
 Future docs may include end-to-end examples with common Django OAuth providers.

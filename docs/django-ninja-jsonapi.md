@@ -4,9 +4,9 @@
 
 ```python
 from django_ninja_jsonapi import (
-    ApplicationBuilder,
+    NinjaJsonAPI,
+    JsonApiMeta,
     QueryStringManager,
-    ViewBaseGeneric,
     HTTPException,
     BadRequest,
 )
@@ -14,8 +14,9 @@ from django_ninja_jsonapi import (
 
 ## Primary modules
 
-- `api` — route and endpoint builders
+- `transparent` — `NinjaJsonAPI` and `JsonApiRouter` for transparent JSON:API wrapping
+- `meta` — `JsonApiMeta` schema-level configuration
 - `querystring` — JSON:API query parameter parsing
-- `data_layers.django_orm` — Django ORM integration
+- `renderers` — `JSONAPIRenderer` for JSON:API response formatting
 - `exceptions` — JSON:API error definitions and handler
-- `atomic` — atomic operations endpoint plumbing
+- `response_helpers` — pagination, include, links, meta, sort, filter helpers

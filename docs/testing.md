@@ -10,10 +10,12 @@ uv run pytest --cov=src/django_ninja_jsonapi --cov-report=term-missing
 
 ## Current coverage areas
 
-- ApplicationBuilder initialization and route registration
+- Transparent JSON:API wrapping/unwrapping (NinjaJsonAPI, JsonApiRouter)
+- JsonApiMeta configuration and auto-detection
 - Querystring parsing (`filter`, `sort`, `include`, `pagination`)
 - Django ORM query-building filter/sort mapping
 - Exception handler response envelope
+- Standalone renderer behavior
 
 ## Writing new tests
 

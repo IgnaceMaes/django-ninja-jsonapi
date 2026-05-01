@@ -107,37 +107,27 @@ ArticleSchema = model_schema(
 ## Full example
 
 ```python
-from django_ninja_jsonapi import JsonApiResource, model_schema, apply_attributes, setup_jsonapi
+from django_ninja_jsonapi import NinjaJsonAPI, model_schema, apply_attributes, jsonapi_paginate
 
 # Schemas
 ArticleSchema = model_schema(Article, fields=["uuid", "title", "body", "status", "created_dt"])
 ArticleCreateSchema = model_schema(Article, fields=["title", "body"], name="ArticleCreateSchema")
 ArticleUpdateSchema = model_schema(Article, fields=["title", "body", "status"], all_optional=True, name="ArticleUpdateSchema")
 
-# Resource
-ArticleResource = JsonApiResource(
-    resource_type="articles",
-    id_field="uuid",
-    schema=ArticleSchema,
-    schema_create=ArticleCreateSchema,
-    schema_update=ArticleUpdateSchema,
-)
+# API
+api = NinjaJsonAPI()
 
-# Endpoints
-@api.get("/articles", response=ArticleResource.response(many=True))
-@ArticleResource.decorator()
+@api.get("/articles", response=list[ArticleSchema])
 def list_articles(request):
     return jsonapi_paginate(request, Article.objects.order_by("id"))
 
-@api.post("/articles", response=ArticleResource.response())
-@ArticleResource.decorator()
-def create_article(request, body: ArticleResource.body_create()):
-    article = Article.objects.create(**body.data.attributes.model_dump())
+@api.post("/articles", response={201: ArticleSchema})
+def create_article(request, body: ArticleCreateSchema):
+    article = Article.objects.create(**body.model_dump())
     return article
 
-@api.patch("/articles/{article_id}", response=ArticleResource.response())
-@ArticleResource.decorator()
-def update_article(request, article_id: str, body: ArticleResource.body_update()):
+@api.patch("/articles/{article_id}", response=ArticleSchema)
+def update_article(request, article_id: str, body: ArticleUpdateSchema):
     article = Article.objects.get(uuid=article_id)
     apply_attributes(article, body)
     return article

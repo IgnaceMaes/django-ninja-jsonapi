@@ -5,11 +5,8 @@ This section helps you go from installation to a working JSON:API endpoint.
 ## Path
 
 1. [Installation](installation.md)
-2. [Quickstart](quickstart.md)
-3. [Standalone renderer](standalone_renderer.md)
-4. [Minimal API (head)](minimal_api_head.md)
-5. [Minimal API example](minimal_api_example.md)
+2. [Transparent JSON:API](transparent_jsonapi.md)
 
 ## What to read next
 
-After finishing this section, continue with [Usage](usage.md) for query features, relationships, and advanced behavior.
+After finishing this section, continue with [Usage](usage.md) for query features, includes, and advanced behavior.

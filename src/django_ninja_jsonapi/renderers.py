@@ -72,7 +72,7 @@ class JSONAPIRenderer(JSONRenderer):
 
     def _build_document(self, request, data: Any, resource_config: JSONAPIResourceConfig) -> dict[str, Any]:
         if self._is_jsonapi_document(data):
-            return data
+            return self._merge_request_data(request, data, resource_config)
 
         is_collection = isinstance(data, list)
         if is_collection:
@@ -112,6 +112,47 @@ class JSONAPIRenderer(JSONRenderer):
             response["included"] = included
 
         return response
+
+    def _merge_request_data(
+        self,
+        request,
+        data: dict[str, Any],
+        resource_config: JSONAPIResourceConfig,
+    ) -> dict[str, Any]:
+        """Merge request-level links, meta, and included into a pre-wrapped JSON:API document."""
+        extra_links = getattr(request, REQUEST_JSONAPI_LINKS_ATTR, None)
+        extra_meta = getattr(request, REQUEST_JSONAPI_META_ATTR, None)
+        included = self._build_included(request)
+
+        if not extra_links and not extra_meta and not included:
+            return data
+
+        merged = dict(data)
+
+        if extra_links:
+            existing_links = merged.get("links") or {}
+            if isinstance(existing_links, dict):
+                existing_links = dict(existing_links)
+            else:
+                existing_links = {}
+            existing_links.update(extra_links)
+            merged["links"] = existing_links
+
+        if extra_meta:
+            existing_meta = merged.get("meta") or {}
+            if isinstance(existing_meta, dict):
+                existing_meta = dict(existing_meta)
+            else:
+                existing_meta = {}
+            existing_meta.update(extra_meta)
+            merged["meta"] = existing_meta
+
+        if included:
+            existing_included = list(merged.get("included") or [])
+            existing_included.extend(included)
+            merged["included"] = existing_included
+
+        return merged
 
     def _build_included(self, request) -> list[dict[str, Any]]:
         included_entries = getattr(request, REQUEST_JSONAPI_INCLUDED_ATTR, None) or []
