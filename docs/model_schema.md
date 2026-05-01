@@ -2,9 +2,7 @@
 
 Generate Pydantic schemas from Django model definitions, reducing boilerplate for CRUD resources.
 
-There are two approaches: **class-based** (`ModelSchema`) and **function-based** (`model_schema()`). Both produce identical results.
-
-## Class-based — `ModelSchema`
+## `ModelSchema`
 
 Define a `Meta` inner class to configure field generation:
 
@@ -60,49 +58,6 @@ User-declared fields always take precedence over auto-generated ones.
 | `all_optional` | `bool` | `False` | Make all fields `Optional` (for PATCH) |
 | `optional_fields` | `set[str]` | `None` | Specific fields to make `Optional` |
 
-## Function-based — `model_schema()`
-
-```python
-from django_ninja_jsonapi import model_schema
-
-ArticleSchema = model_schema(
-    Article,
-    fields=["uuid", "title", "body", "status", "organization_name", "created_dt"],
-    resource_type="articles",
-    id_field="uuid",
-)
-
-ArticleCreateSchema = model_schema(
-    Article,
-    fields=["title", "body", "status"],
-    optional_fields={"status"},
-    name="ArticleCreateSchema",
-)
-
-ArticleUpdateSchema = model_schema(
-    Article,
-    fields=["title", "body", "status"],
-    all_optional=True,
-    name="ArticleUpdateSchema",
-)
-```
-
-When using `resource_type`, a `JsonApiMeta` is attached to the generated schema automatically.
-
-### Parameters
-
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `model` | Django Model | required | The Django model class |
-| `fields` | `list[str]` | `None` | Field names to include. Supports DB fields and `@property` names. If `None`, all concrete fields are included. |
-| `exclude` | `set[str]` | `None` | Field names to exclude |
-| `id_field` | `str` | `None` | Name of the field used as the JSON:API `id`. Passed to `JsonApiMeta` when `resource_type` is set. |
-| `optional_fields` | `set[str]` | `None` | Fields to mark as `Optional` |
-| `all_optional` | `bool` | `False` | Make all fields `Optional` (for PATCH) |
-| `name` | `str` | `None` | Custom schema name (default: `{Model}Schema`) |
-| `extra_fields` | `dict` | `None` | Additional Pydantic field definitions |
-| `resource_type` | `str` | `None` | JSON:API resource type (e.g. `"articles"`). When set, attaches `JsonApiMeta` so the schema works with `NinjaJsonAPI`. |
-
 ## Features
 
 ### Automatic type mapping
@@ -140,10 +95,10 @@ class Article(models.Model):
         return self.organization.name
 
 
-ArticleSchema = model_schema(
-    Article,
-    fields=["id", "title", "organization_name"],
-)
+class ArticleSchema(ModelSchema):
+    class Meta:
+        model = Article
+        fields = ["id", "title", "organization_name"]
 ```
 
 ### `from_attributes` enabled
@@ -152,14 +107,15 @@ All generated schemas have `ConfigDict(from_attributes=True)`, so they work with
 
 ### Extra fields
 
-Add fields not on the model:
+Add fields not on the model by declaring them on the class body:
 
 ```python
-ArticleSchema = model_schema(
-    Article,
-    fields=["title"],
-    extra_fields={"custom_score": (float, 0.0)},
-)
+class ArticleSchema(ModelSchema):
+    custom_score: float = 0.0
+
+    class Meta:
+        model = Article
+        fields = ["title"]
 ```
 
 ## Full example

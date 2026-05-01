@@ -38,7 +38,6 @@ __all__ = [
     "jsonapi_paginate",
     "jsonapi_pagination",
     "jsonapi_sort",
-    "model_schema",
     "parse_include",
 ]
 
@@ -63,11 +62,6 @@ def __getattr__(name: str) -> Any:
         from django_ninja_jsonapi.helpers import apply_attributes
 
         return apply_attributes
-
-    if name == "model_schema":
-        from django_ninja_jsonapi._model_schema import model_schema
-
-        return model_schema
 
     if name == "ModelSchema":
         from django_ninja_jsonapi._model_schema import ModelSchema

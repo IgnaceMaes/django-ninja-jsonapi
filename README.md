@@ -189,7 +189,6 @@ from django_ninja_jsonapi import (
     apply_attributes,
     get_rel_id,
     get_rel_ids,
-    model_schema,
     jsonapi_paginate,
     jsonapi_pagination,
     jsonapi_cursor_pagination,

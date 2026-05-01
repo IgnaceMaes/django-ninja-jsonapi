@@ -1,29 +1,18 @@
 """Django Model → Pydantic Schema generator.
 
-Provides two ways to derive Pydantic schemas from Django models:
+Provides ``ModelSchema``, a declarative base class for deriving Pydantic
+schemas from Django model definitions::
 
-1. **Class-based** — ``ModelSchema`` base class with ``Meta`` inner class::
+    from django_ninja_jsonapi import ModelSchema
 
-       from django_ninja_jsonapi import ModelSchema
+    class CustomerSchema(ModelSchema):
+        class Meta:
+            model = Customer
+            fields = ["id", "name", "email"]
+            resource_type = "customers"
 
-       class CustomerSchema(ModelSchema):
-           class Meta:
-               model = Customer
-               fields = ["id", "name", "email"]
-               resource_type = "customers"
-
-2. **Function-based** — ``model_schema()`` factory::
-
-       from django_ninja_jsonapi import model_schema
-
-       CustomerSchema = model_schema(
-           Customer,
-           fields=["id", "name", "email"],
-           resource_type="customers",
-       )
-
-Both approaches produce identical schemas with ``ConfigDict(from_attributes=True)``
-and optional ``JsonApiMeta`` for transparent ``NinjaJsonAPI`` integration.
+Generated schemas include ``ConfigDict(from_attributes=True)`` and optional
+``JsonApiMeta`` for transparent ``NinjaJsonAPI`` integration.
 """
 
 from __future__ import annotations
@@ -31,9 +20,9 @@ from __future__ import annotations
 import datetime
 import uuid
 from decimal import Decimal
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, create_model
+from pydantic import BaseModel, ConfigDict
 
 # Mapping from Django field types to Python types
 _DJANGO_FIELD_TYPE_MAP: dict[str, type] = {
@@ -178,72 +167,6 @@ def _attach_jsonapi_meta(schema: type, resource_type: str | None, id_field: str 
         from django_ninja_jsonapi.meta import JsonApiMeta
 
         schema.jsonapi_meta = JsonApiMeta(resource_type=resource_type, id_field=id_field)
-
-
-def model_schema(
-    model: Any,
-    *,
-    fields: list[str] | None = None,
-    exclude: set[str] | None = None,
-    id_field: str | None = None,
-    optional_fields: set[str] | None = None,
-    all_optional: bool = False,
-    name: str | None = None,
-    extra_fields: dict[str, tuple[type, Any]] | None = None,
-    resource_type: str | None = None,
-) -> Type[BaseModel]:
-    """Generate a Pydantic schema from a Django model.
-
-    Args:
-        model: A Django model class.
-        fields: List of field names to include.  Supports both database fields
-            and ``@property`` names.  If ``None``, all concrete model fields
-            are included.
-        exclude: Set of field names to exclude (applied after *fields*).
-        id_field: Name of the field used as the JSON:API ``id``.  When set,
-            this field is always included and named ``id`` in the schema
-            (unless the field is already named ``id``).
-        optional_fields: Set of fields to mark as ``Optional`` regardless of
-            the model definition.
-        all_optional: If ``True``, **all** fields become ``Optional`` —
-            useful for PATCH/update schemas.
-        name: Custom name for the generated model.  Defaults to
-            ``{ModelName}Schema``.
-        extra_fields: Additional Pydantic field definitions to include in
-            the schema, as ``{name: (type, default_or_Field)}``.
-        resource_type: JSON:API resource type string (e.g. ``"articles"``).
-            When provided, a ``JsonApiMeta`` is attached as a ``ClassVar``
-            on the schema so it works with ``NinjaJsonAPI`` transparently.
-
-    Returns:
-        A Pydantic ``BaseModel`` subclass.
-    """
-    model_name = name or f"{model.__name__}Schema"
-
-    _, annotations, defaults = _resolve_model_fields(model, fields, exclude, all_optional, optional_fields)
-
-    # Build pydantic field definitions as (type, default) tuples
-    pydantic_fields: dict[str, Any] = {}
-    for field_name, annotation in annotations.items():
-        if field_name in defaults:
-            pydantic_fields[field_name] = (annotation, defaults[field_name])
-        else:
-            pydantic_fields[field_name] = (annotation, ...)
-
-    # Merge extra fields
-    if extra_fields:
-        pydantic_fields.update(extra_fields)
-
-    schema = create_model(
-        model_name,
-        __config__=ConfigDict(from_attributes=True),
-        **pydantic_fields,
-    )
-
-    # Attach JsonApiMeta as a ClassVar when resource_type is provided
-    _attach_jsonapi_meta(schema, resource_type, id_field)
-
-    return schema
 
 
 # ---------------------------------------------------------------------------
