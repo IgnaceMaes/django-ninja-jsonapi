@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.8.0](https://github.com/IgnaceMaes/django-ninja-jsonapi/compare/v0.7.0...v0.8.0) (2026-05-01)
+
+
+### Features
+
+* transparent renderer ([23393fe](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/23393fea6f76d90a4e8da5bd4fbcea220d4e41d2))
+* transparent renderer ([bc01fa3](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/bc01fa34b9a1c3abad868575179767c3b00936ef))
+
+
+### Bug Fixes
+
+* ty ([4db218a](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/4db218a933b5626aac5af9fd96155b2a4d163afb))
+
+
+### Documentation
+
+* update ([279a9bb](https://github.com/IgnaceMaes/django-ninja-jsonapi/commit/279a9bbd1fca7b1940614203b443959ebf093a1b))
+
 ## [0.7.0](https://github.com/IgnaceMaes/django-ninja-jsonapi/compare/v0.6.0...v0.7.0) (2026-05-01)
 
 
