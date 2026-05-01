@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 from django_ninja_jsonapi.renderers import JSONAPIRelationshipConfig, normalize_relationships
 
 _RESPONSE_CACHE: dict[str, Type[BaseModel]] = {}
-_BODY_CACHE: dict[str, type] = {}
+_BODY_CACHE: dict[str, Type[Any]] = {}
 
 # ---------------------------------------------------------------------------
 # Generic base classes for type-checker / IDE support
@@ -156,7 +156,7 @@ def _build_relationship_identifier_model(rel_config: JSONAPIRelationshipConfig) 
         f"{rel_config.resource_type.title().replace('-', '')}RelIdentifier",
         __config__=ConfigDict(extra="forbid"),
         id=(str, ...),
-        type=(Literal[rel_config.resource_type], rel_config.resource_type),  # type: ignore[valid-type]
+        type=(Literal[rel_config.resource_type], rel_config.resource_type),
     )
 
 
@@ -172,17 +172,17 @@ def _build_relationship_fields(
         if rel_config.many:
             data_model = create_model(
                 f"{rel_name.title().replace('-', '')}RelToMany",
-                data=(list[identifier], ...),  # ty: ignore[invalid-type-form]
+                data=(list[identifier], ...),
                 links=(Optional[RelationshipLinks], None),
             )
         else:
             data_model = create_model(
                 f"{rel_name.title().replace('-', '')}RelToOne",
-                data=(Optional[identifier], None),  # ty: ignore[invalid-type-form]
+                data=(Optional[identifier], None),
                 links=(Optional[RelationshipLinks], None),
             )
 
-        fields[rel_name] = (Optional[data_model], None)  # ty: ignore[invalid-type-form]
+        fields[rel_name] = (Optional[data_model], None)
 
     return fields
 
@@ -342,13 +342,13 @@ def jsonapi_response(
     # --- resource object ---
     resource_object_fields: dict[str, Any] = {
         "id": (str, Field(description="Resource object ID", examples=["1"])),
-        "type": (Literal[resource_type], Field(default=resource_type, description="Resource type")),  # type: ignore[valid-type]
+        "type": (Literal[resource_type], Field(default=resource_type, description="Resource type")),
         "attributes": (attributes_model, Field(description="Resource object attributes")),
         "links": (Optional[ResourceLinks], Field(default=None, description="Resource links")),
     }
 
     if rel_field_defs:
-        relationships_model = create_model(  # ty: ignore[no-matching-overload]
+        relationships_model = create_model(
             f"{schema_name}Relationships",
             **rel_field_defs,
         )
@@ -378,7 +378,7 @@ def jsonapi_response(
     if many:
         doc_fields["data"] = (list[resource_object_model], Field(description="Resource objects collection"))
         doc_fields["links"] = (Optional[DocumentLinks], Field(default=None, description="Top level document links"))
-        doc_fields["meta"] = (Optional[meta_model], Field(default=None, description="JSON:API metadata"))  # ty: ignore[invalid-type-form]
+        doc_fields["meta"] = (Optional[meta_model], Field(default=None, description="JSON:API metadata"))
     else:
         doc_fields["data"] = (resource_object_model, Field(description="Resource object data"))
         doc_fields["links"] = (Optional[ResourceLinks], Field(default=None, description="Top level document links"))
@@ -454,7 +454,7 @@ def jsonapi_body(
     rels = normalize_relationships(relationships)
     key = _cache_key(schema, resource_type, relationships=rels, suffix=f"body:allow_id={allow_id}")
     if key in _BODY_CACHE:
-        return _BODY_CACHE[key]  # ty: ignore[invalid-return-type]
+        return _BODY_CACHE[key]
 
     schema_name = schema.__name__.removesuffix("Schema")
 
@@ -463,7 +463,7 @@ def jsonapi_body(
 
     # --- data item ---
     data_fields: dict[str, Any] = {
-        "type": (Literal[resource_type], Field(default=resource_type, description="Resource type")),  # type: ignore[valid-type]
+        "type": (Literal[resource_type], Field(default=resource_type, description="Resource type")),
         "attributes": (schema, Field(description="Resource object attributes")),
     }
 
@@ -471,7 +471,7 @@ def jsonapi_body(
         data_fields["id"] = (Optional[str], Field(default=None, description="Resource object ID"))
 
     if rel_field_defs:
-        relationships_model = create_model(  # ty: ignore[no-matching-overload]
+        relationships_model = create_model(
             f"{schema_name}InRelationships",
             **rel_field_defs,
         )

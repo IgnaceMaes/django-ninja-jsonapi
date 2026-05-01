@@ -21,7 +21,7 @@ def create_article(request, body: ArticleCreateSchema):
 {
   "errors": [
     {
-      "status_code": 400,
+      "status": "400",
       "source": {"parameter": "include"},
       "title": "Bad Request",
       "detail": "Invalid query parameter: includez"

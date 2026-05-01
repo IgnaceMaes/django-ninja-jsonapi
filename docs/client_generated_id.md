@@ -20,7 +20,7 @@ Create request example:
 
 ```http
 POST /api/customers
-Content-Type: application/json
+Content-Type: application/vnd.api+json
 
 {
 	"data": {

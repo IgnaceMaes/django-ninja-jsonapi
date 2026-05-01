@@ -777,10 +777,11 @@ class TestCreatingResources:
         def create_article(request, body: ArticleCreateSchema):
             captured["author_id"] = get_rel_id(request, "author")
             captured["tag_ids"] = get_rel_ids(request, "tags")
+            assert captured["author_id"] is not None
             return 201, {
                 "id": 1,
                 "title": body.title,
-                "author": {"id": int(captured["author_id"]), "first_name": "A", "last_name": "B"},  # ty: ignore[invalid-argument-type]
+                "author": {"id": int(captured["author_id"]), "first_name": "A", "last_name": "B"},
                 "tags": [{"id": int(tid), "name": f"tag-{tid}"} for tid in captured["tag_ids"]],
             }
 
