@@ -413,9 +413,7 @@ class TestApplyAttributesWithNewStyle:
             def save(self, update_fields=None):
                 self.saved_fields = update_fields
 
-        body = BodyModel.model_validate(
-            {"data": {"type": "things", "attributes": {"name": "new"}}}
-        )
+        body = BodyModel.model_validate({"data": {"type": "things", "attributes": {"name": "new"}}})
         instance = FakeModel()
         attrs = apply_attributes(instance, body, save=False)
 
