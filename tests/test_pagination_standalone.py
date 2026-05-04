@@ -10,22 +10,21 @@ class TestJsonapiPagination:
         jsonapi_pagination(request, count=50, page_size=10, page_number=1)
 
         meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
-        assert meta["count"] == 50
-        assert meta["totalPages"] == 5
+        assert meta == {"pagination": {"count": 50, "pages": 5, "page": 1}}
 
     def test_total_pages_rounds_up(self):
         request = RequestFactory().get("/articles/")
         jsonapi_pagination(request, count=51, page_size=10, page_number=1)
 
         meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
-        assert meta["totalPages"] == 6
+        assert meta["pagination"]["pages"] == 6
 
     def test_total_pages_is_at_least_one(self):
         request = RequestFactory().get("/articles/")
         jsonapi_pagination(request, count=0, page_size=10, page_number=1)
 
         meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
-        assert meta["totalPages"] == 1
+        assert meta["pagination"]["pages"] == 1
 
     def test_first_and_last_links_always_present(self):
         request = RequestFactory().get("/articles/")
@@ -90,7 +89,7 @@ class TestJsonapiPagination:
         assert "prev" not in links
         assert "next" not in links
         meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
-        assert meta["totalPages"] == 1
+        assert meta["pagination"]["pages"] == 1
 
 
 class TestJsonapiCursorPagination:
@@ -148,8 +147,7 @@ class TestJsonapiPaginate:
 
         assert page == list(range(10))
         meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
-        assert meta["count"] == 50
-        assert meta["totalPages"] == 5
+        assert meta == {"pagination": {"count": 50, "pages": 5, "page": 1}}
 
     def test_returns_second_page(self):
         request = RequestFactory().get("/articles/?page[number]=2")
@@ -193,7 +191,7 @@ class TestJsonapiPaginate:
 
         assert len(page) == 15
         meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
-        assert meta["totalPages"] == 4  # ceil(50/15)
+        assert meta["pagination"]["pages"] == 4  # ceil(50/15)
 
     def test_clamps_to_explicit_max_page_size(self):
         request = RequestFactory().get("/articles/?page[size]=100")
@@ -221,7 +219,7 @@ class TestJsonapiPaginate:
 
         assert page == list(range(10))
         meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
-        assert meta["count"] == 30
+        assert meta["pagination"]["count"] == 30
 
     def test_empty_collection(self):
         request = RequestFactory().get("/articles/")
@@ -229,8 +227,7 @@ class TestJsonapiPaginate:
 
         assert page == []
         meta = getattr(request, REQUEST_JSONAPI_META_ATTR)
-        assert meta["count"] == 0
-        assert meta["totalPages"] == 1
+        assert meta == {"pagination": {"count": 0, "pages": 1, "page": 1}}
 
     def test_page_number_below_one_defaults_to_one(self):
         request = RequestFactory().get("/articles/?page[number]=0")

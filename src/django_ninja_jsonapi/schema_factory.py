@@ -394,10 +394,15 @@ def jsonapi_response(
 
     # --- meta ---
     if many:
+        pagination_model: Any = create_model(
+            f"{schema_name}ListPaginationMeta",
+            count=(Optional[int], Field(default=None, examples=[100])),
+            pages=(Optional[int], Field(default=None, examples=[5])),
+            page=(Optional[int], Field(default=None, examples=[1])),
+        )
         meta_model: Any = create_model(
             f"{schema_name}ListMeta",
-            count=(Optional[int], Field(default=None, examples=[100])),
-            totalPages=(Optional[int], Field(default=None, alias="totalPages", examples=[5])),
+            pagination=(Optional[pagination_model], Field(default=None, description="Pagination metadata")),
         )
     else:
         meta_model: Any = None

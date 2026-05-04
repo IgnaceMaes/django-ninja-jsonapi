@@ -71,9 +71,9 @@ def jsonapi_paginate(
 
     Reads ``page[number]`` and ``page[size]`` from query parameters (falling
     back to *page_size* or the ``NINJA_JSONAPI["MAX_PAGE_SIZE"]`` setting).
-    Counts, slices, sets ``meta`` (``count``, ``totalPages``) and ``links``
-    (``first``, ``last``, ``prev``, ``next``) on the request, and returns the
-    page of items.
+    Counts, slices, sets ``meta`` ``pagination`` (``count``, ``pages``, ``page``)
+    and ``links`` (``first``, ``last``, ``prev``, ``next``) on the request, and
+    returns the page of items.
 
     This is the recommended way to paginate list endpoints — it mirrors how
     DRF JSON:API handles pagination automatically::
@@ -186,7 +186,7 @@ def jsonapi_pagination(
     """
     Add JSON:API pagination meta and links to the request.
 
-    Computes ``totalPages`` and builds ``first``, ``last``, ``prev``, ``next``
+    Computes ``pages`` and builds ``first``, ``last``, ``prev``, ``next``
     links using ``page[number]`` / ``page[size]`` strategy. Calls
     :func:`jsonapi_meta` and :func:`jsonapi_links` internally.
 
@@ -206,7 +206,7 @@ def jsonapi_pagination(
     """
     total_pages = max(1, math.ceil(count / page_size)) if page_size > 0 else 1
 
-    jsonapi_meta(request, count=count, totalPages=total_pages)
+    jsonapi_meta(request, pagination={"count": count, "pages": total_pages, "page": page_number})
 
     links: dict[str, str] = {
         "first": _build_page_url(request, {"page[number]": "1", "page[size]": str(page_size)}),
@@ -234,7 +234,7 @@ def jsonapi_cursor_pagination(
 
     Builds ``next`` and ``prev`` links using ``page[cursor]`` / ``page[size]``
     strategy. Unlike :func:`jsonapi_pagination`, this does not set ``count`` or
-    ``totalPages`` meta since cursor pagination typically doesn't know totals.
+    ``pages`` meta since cursor pagination typically doesn't know totals.
 
     Example::
 
