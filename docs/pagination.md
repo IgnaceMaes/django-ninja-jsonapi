@@ -52,8 +52,11 @@ Typical list response contains pagination metadata:
 		"next": "http://localhost:8000/api/customers?page%5Bnumber%5D=3&page%5Bsize%5D=10"
 	},
 	"meta": {
-		"count": 10,
-		"totalPages": 4
+		"pagination": {
+			"count": 10,
+			"pages": 4,
+			"page": 1
+		}
 	}
 }
 ```

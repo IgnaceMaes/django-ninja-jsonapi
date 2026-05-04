@@ -53,14 +53,15 @@ class TestJsonapiResponse:
 
     def test_list_response_meta_has_pagination_fields(self):
         ResponseModel = jsonapi_response(ArticleSchema, "articles", many=True)
-        meta_field = ResponseModel.model_fields["meta"]
-        # The meta type should have count and totalPages
         from typing import get_args
 
-        meta_types = get_args(meta_field.annotation)
-        meta_type = next((t for t in meta_types if t is not type(None)), meta_field.annotation)
-        assert "count" in meta_type.model_fields
-        assert "totalPages" in meta_type.model_fields
+        meta_field = ResponseModel.model_fields["meta"]
+        meta_type = get_args(meta_field.annotation)[0]
+        pagination_field = meta_type.model_fields["pagination"]
+        pagination_type = get_args(pagination_field.annotation)[0]
+        assert "count" in pagination_type.model_fields
+        assert "pages" in pagination_type.model_fields
+        assert "page" in pagination_type.model_fields
 
     def test_resource_object_has_id_type_attributes(self):
         ResponseModel = jsonapi_response(ArticleSchema, "articles")
@@ -153,7 +154,7 @@ class TestJsonapiResponse:
                         "attributes": {"title": "C", "body": "D"},
                     },
                 ],
-                "meta": {"count": 2, "totalPages": 1},
+                "meta": {"pagination": {"count": 2, "pages": 1, "page": 1}},
             }
         )
         assert len(doc.data) == 2

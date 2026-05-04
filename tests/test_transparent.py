@@ -404,7 +404,7 @@ class TestNinjaJsonAPIPagination:
         data = response.json()
         assert len(data["data"]) == 10
         assert "meta" in data
-        assert data["meta"]["count"] == 50
+        assert data["meta"]["pagination"]["count"] == 50
 
 
 class TestNinjaJsonAPINoMeta:
